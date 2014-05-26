@@ -602,7 +602,16 @@
     </message>
 
 
- <!-- 72 is free -->
+  <message name="SERVO_COMMANDS" id="72" link="forwarded">
+   <field name="servo_1" type="int16"/>
+   <field name="servo_2" type="int16"/>
+   <field name="servo_3" type="int16"/>
+   <field name="servo_4" type="int16"/>
+   <field name="servo_5" type="int16"/>
+   <field name="servo_6" type="int16"/>
+   <field name="servo_7" type="int16"/>
+ </message> 
+
  <!-- 73 is free -->
  <!-- 74 is free -->
  <!-- 75 is free -->

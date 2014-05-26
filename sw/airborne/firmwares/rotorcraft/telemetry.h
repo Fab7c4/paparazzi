@@ -140,6 +140,12 @@
 #define PERIODIC_SEND_ACTUATORS(_trans, _dev) {}
 #endif
 
+/*#define PERIODIC_SEND_ACTUATORS_RC(_trans, _dev) { \
+  if (COMMAND_RC_MODE) { \
+     DOWNLINK_SEND_ACTUATORS(_trans, _dev, ACTUATORS_NB, actuators);\
+  }\
+}*/
+
 #define PERIODIC_SEND_IMU_GYRO_SCALED(_trans, _dev) {		\
     DOWNLINK_SEND_IMU_GYRO_SCALED(_trans, _dev,			\
                  &imu.gyro.p,		\
