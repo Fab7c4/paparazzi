@@ -4,7 +4,7 @@
      Applicable configuration:
      airframe="airframes/highwind/betty_manual.xml"
      radio="radios/cockpitSX.xml"
-     telemetry="telemetry/betty.xml"
+     telemetry="telemetry/baby_betty.xml"
      flight_plan="flight_plans/dummy.xml"
      settings="settings/rotorcraft_basic.xml settings/control/rotorcraft_guidance.xml settings/control/stabilization_att_int.xml"
 -->
@@ -12,14 +12,13 @@
 <airframe name="babybetty">
 
   <servos driver="Pwm">
-    <servo name="THROTTLE"         no="0" min="1000" neutral="1000" max="2000"/>
     <servo name="AILERON_LEFT" no="0" min="1000" neutral="1500" max="2000"/>
     <servo name="AILERON_RIGHT" no="1" min="1000" neutral="1500" max="2000"/>
     <servo name="FLAP_LEFT"  no="2" min="1000" neutral="1500" max="2000"/>
     <servo name="FLAP_RIGHT"  no="3" min="1000" neutral="1500" max="2000"/>
     <servo name="ELEVATOR"  no="4" min="1000" neutral="1500" max="2000"/>
     <servo name="RUDDER"  no="5" min="1000" neutral="1500" max="2000"/>
-    
+    <servo name="THROTTLE" no="6" min="1000" neutral="1000" max="2000"/>
   </servos>
 
   <commands>
@@ -34,10 +33,10 @@
     <axis name="RC_FLAP_RIGHT" failsafe_value="0"/>
     <axis name="RC_RUDDER" failsafe_value="0"/>
     <axis name="RC_ELEVATOR" failsafe_value="0"/>
-    <axis name="RC_TETHER" failsafe_value="0"/> 
     <axis name="RC_MODE" failsafe_value="0"/>
     <axis name="RC_FLAP" failsafe_value="0"/>
     <axis name="RC_AILERON" failsafe_value="0"/>
+	<axis name="RC_THROTTLE" failsafe_value="0"/>
   </commands>
 
 <!-- the order of the channels on a spektrum is always as follows :
@@ -64,7 +63,7 @@
     <set command="RC_FLAP_RIGHT" value="@YAW"/>
     <set command="RC_RUDDER" value="@GEAR"/>
     <set command="RC_ELEVATOR" value="@FLAP"/>
-    <set command="RC_TETHER" value="@AUX2"/>
+    <set command="RC_THROTTLE" value="@THROTTLE"/>
     <set command="RC_MODE" value="@AUX3"/>
   </rc_commands>
 -->
@@ -79,7 +78,7 @@
 use negative when in mirror -->
     <set command="RC_RUDDER" value="-@YAW"/>
     <set command="RC_ELEVATOR" value="-@PITCH"/>
-    <set command="RC_TETHER" value="@AUX2"/>
+    <set command="RC_THROTTLE" value="@THROTTLE"/>
     <set command="RC_MODE" value="@AUX3"/>
   </rc_commands>
 
@@ -94,9 +93,7 @@ use negative when in mirror -->
     <set servo="FLAP_RIGHT" value= "@RC_MODE > 2000 ? @RC_FLAP_RIGHT       : set_servo.servo_4"/>
     <set servo="RUDDER" value= "@RC_MODE > 2000 ? @RC_RUDDER               : set_servo.servo_5"/>
     <set servo="ELEVATOR" value= "@RC_MODE > 2000 ? @RC_ELEVATOR           : set_servo.servo_6"/>
-    <set servo="TETHER" value= "@RC_MODE > 2000 ? 0 : 0"/>
-    <!-- <set servo="TETHER"  value= "@RC_MODE > 2000 ? @RC_TETHER : 9600"/> -->
-<set servo="THROTTLE"         value="@THROTTLE"/>
+    <set servo="THROTTLE" value= "@RC_MODE > 2000 ? @RC_THROTTLE           : set_servo.servo_7"/>    
   </command_laws>
 
 
