@@ -79,13 +79,7 @@ static inline int ahrs_is_aligned(void) {
 PRINT_CONFIG_MSG("Using default AP_MODE_KILL as MODE_STARTUP")
 #endif
 
-static void send_airpseed(void) {
-  DOWNLINK_SEND_AIRSPEED (DefaultChannel, DefaultDevice 
-   &adc_airspeed_val,
-   stateGetAirspeed_f(),
-   &v_ctl_auto_airspeed_setpoint,
-   &v_ctl_auto_airspeed_controlled,
-   &v_ctl_auto_groundspeed_setpoint);
+
  }
 
 
@@ -102,7 +96,7 @@ void autopilot_init(void) {
   autopilot_flight_time = 0;
   autopilot_rc = TRUE;
   autopilot_power_switch = FALSE;
-  register_periodic_telemetry(DefaultPeriodic, "AIRSPEED", send_airspeed);
+  
 #ifdef POWER_SWITCH_LED
   LED_ON(POWER_SWITCH_LED); // POWER OFF
 #endif
