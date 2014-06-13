@@ -80,7 +80,7 @@ PRINT_CONFIG_MSG("Using default AP_MODE_KILL as MODE_STARTUP")
 #endif
 
 
- }
+
 
 
 void autopilot_init(void) {
