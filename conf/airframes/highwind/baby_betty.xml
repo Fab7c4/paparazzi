@@ -36,7 +36,7 @@
     <axis name="RC_MODE" failsafe_value="0"/>
     <axis name="RC_FLAP" failsafe_value="0"/>
     <axis name="RC_AILERON" failsafe_value="0"/>
-	<axis name="RC_THROTTLE" failsafe_value="0"/>
+    <axis name="RC_THROTTLE" failsafe_value="0"/>
   </commands>
 
 <!-- the order of the channels on a spektrum is always as follows :
