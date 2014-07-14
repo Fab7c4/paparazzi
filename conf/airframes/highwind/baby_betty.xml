@@ -12,13 +12,13 @@
 <airframe name="babybetty">
 
   <servos driver="Pwm">
-    <servo name="AILERON_LEFT" no="0" min="1000" neutral="1500" max="2000"/>
-    <servo name="AILERON_RIGHT" no="1" min="1000" neutral="1500" max="2000"/>
-    <servo name="FLAP_LEFT"  no="2" min="1000" neutral="1500" max="2000"/>
-    <servo name="FLAP_RIGHT"  no="3" min="1000" neutral="1500" max="2000"/>
-    <servo name="ELEVATOR"  no="4" min="1000" neutral="1500" max="2000"/>
-    <servo name="RUDDER"  no="5" min="1000" neutral="1500" max="2000"/>
-    <servo name="THROTTLE" no="6" min="1000" neutral="1000" max="2000"/>
+    <servo name="AILERON_LEFT" no="0" min="1300" neutral="1500" max="1700"/>
+    <servo name="AILERON_RIGHT" no="1" min="1300" neutral="1500" max="1700"/>
+    <servo name="FLAP_LEFT"  no="2" min="1300" neutral="1500" max="1700"/>
+    <servo name="FLAP_RIGHT"  no="3" min="1300" neutral="1500" max="1700"/>
+    <servo name="ELEVATOR"  no="4" min="1300" neutral="1500" max="1700"/>
+    <servo name="RUDDER"  no="5" min="1300" neutral="1500" max="1700"/>
+    <servo name="THROTTLE" no="6" min="1300" neutral="1000" max="1700"/>
   </servos>
 
   <commands>
