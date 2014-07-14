@@ -160,6 +160,16 @@
    gui_color="white"
   />
   <aircraft
+   name="line_angle_sensor"
+   ac_id="1"
+   airframe="airframes/highwind/line_angle_sensor.xml"
+   radio="radios/cockpitSX.xml"
+   telemetry="telemetry/line_angle.xml"
+   flight_plan="flight_plans/dummy.xml"
+   settings=" settings/rotorcraft_basic.xml"
+   gui_color="blue"
+  />
+  <aircraft
    name="setup_lisam2"
    ac_id="16"
    airframe="airframes/examples/setup_lisam2.xml"
