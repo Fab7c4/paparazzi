@@ -42,13 +42,15 @@
 #include "state.h"
 #include "mcu_periph/i2c.h"
 #include "mcu_periph/uart.h"
+#include "mcu_periph/sys_time.h"
 #include "messages.h"
 #include "subsystems/datalink/downlink.h"
 #include <math.h>
+#include "led.h"
 
 #if !USE_AIRSPEED
-#ifndef SENSOR_SYNC_SEND
-#warning either set USE_AIRSPEED or SENSOR_SYNC_SEND to use ets_airspeed
+#ifndef AIRSPEED_ETS_SYNC_SEND
+#warning either set USE_AIRSPEED or AIRSPEED_ETS_SYNC_SEND to use ets_airspeed
 #endif
 #endif
 
@@ -68,10 +70,17 @@
 #ifndef AIRSPEED_ETS_I2C_DEV
 #define AIRSPEED_ETS_I2C_DEV i2c0
 #endif
-
+PRINT_CONFIG_VAR(AIRSPEED_ETS_I2C_DEV)
 #ifndef DOWNLINK_DEVICE
 #define DOWNLINK_DEVICE DOWNLINK_AP_DEVICE
 #endif
+
+
+/** delay in seconds until sensor is read after startup sensor seems to be very picky with delay 10 ticks worked for us */
+#ifndef AIRSPEED_ETS_START_DELAY
+#define AIRSPEED_ETS_START_DELAY 10
+#endif
+PRINT_CONFIG_VAR(AIRSPEED_ETS_START_DELAY)
 
 // Global variables
 uint16_t airspeed_ets_raw;
@@ -88,6 +97,10 @@ volatile bool_t airspeed_ets_i2c_done;
 bool_t airspeed_ets_offset_init;
 uint32_t airspeed_ets_offset_tmp;
 uint16_t airspeed_ets_cnt;
+uint32_t airspeed_ets_delay_time;
+bool_t   airspeed_ets_delay_done;
+uint8_t airspeed_ets_start_delay;
+
 
 void airspeed_ets_init( void ) {
   int n;
@@ -100,17 +113,29 @@ void airspeed_ets_init( void ) {
   airspeed_ets_offset_init = FALSE;
   airspeed_ets_cnt = AIRSPEED_ETS_OFFSET_NBSAMPLES_INIT + AIRSPEED_ETS_OFFSET_NBSAMPLES_AVRG;
 
+  airspeed_ets_start_delay = AIRSPEED_ETS_START_DELAY;
+
   airspeed_ets_buffer_idx = 0;
   for (n=0; n < AIRSPEED_ETS_NBSAMPLES_AVRG; ++n)
     airspeed_ets_buffer[n] = 0.0;
 
-  airspeed_ets_i2c_trans.status = I2CTransDone;
+  /* Don't want the event running until after the delay */
+  airspeed_ets_i2c_trans.status = I2CTransFailed;
 }
 
 void airspeed_ets_read_periodic( void ) {
 #ifndef SITL
-  if (airspeed_ets_i2c_trans.status == I2CTransDone)
-    i2c_receive(&AIRSPEED_ETS_I2C_DEV, &airspeed_ets_i2c_trans, AIRSPEED_ETS_ADDR, 2);
+  /* Delay initial communication with the airspeed sensor */
+  if (airspeed_ets_start_delay) {
+    airspeed_ets_start_delay--;
+    if (airspeed_ets_start_delay == 0) {
+      /* Don't want the event running until after the delay */
+      airspeed_ets_i2c_trans.status = I2CTransDone;
+    }
+  } else {
+    if (airspeed_ets_i2c_trans.status == I2CTransDone)
+      i2c_receive(&AIRSPEED_ETS_I2C_DEV, &airspeed_ets_i2c_trans, AIRSPEED_ETS_ADDR, 2);
+  }
 #else // SITL
   extern float sim_air_speed;
   stateSetAirspeed_f(&sim_air_speed);
@@ -120,7 +145,7 @@ void airspeed_ets_read_periodic( void ) {
 void airspeed_ets_read_event( void ) {
   int n;
   float airspeed_tmp = 0.0;
-
+  LED_TOGGLE(5);
   // Get raw airspeed from buffer
   airspeed_ets_raw = ((uint16_t)(airspeed_ets_i2c_trans.buf[1]) << 8) | (uint16_t)(airspeed_ets_i2c_trans.buf[0]);
   // Check if this is valid airspeed
@@ -173,7 +198,7 @@ void airspeed_ets_read_event( void ) {
 #if USE_AIRSPEED
     stateSetAirspeed_f(&airspeed_ets);
 #endif
-#ifdef SENSOR_SYNC_SEND
+#ifdef AIRSPEED_ETS_SYNC_SEND
     DOWNLINK_SEND_AIRSPEED_ETS(DefaultChannel, DefaultDevice, &airspeed_ets_raw, &airspeed_ets_offset, &airspeed_ets);
 #endif
   } else {
