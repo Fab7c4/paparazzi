@@ -72,14 +72,14 @@
     <set command="RC_AILERON_LEFT" value="@ROLL"/>
     <set command="RC_AILERON_RIGHT" value="@ROLL"/>
 <!-- servo's in the same directen, use negative to roll -->
-    <set command="RC_FLAP_LEFT" value="@FLAP"/>
-    <set command="RC_FLAP_RIGHT" value="-@FLAP"/>
+    <set command="RC_FLAP_LEFT" value="@AUX2"/>
+    <set command="RC_FLAP_RIGHT" value="-@AUX2"/>
 <!-- the same because used for lift when servo's in same direction
 use negative when in mirror -->
     <set command="RC_RUDDER" value="-@YAW"/>
     <set command="RC_ELEVATOR" value="-@PITCH"/>
     <set command="RC_THROTTLE" value="@THROTTLE"/>
-    <set command="RC_MODE" value="@AUX3"/>
+    <set command="RC_MODE" value="@FLAP"/>
   </rc_commands>
 
   <command_laws>
