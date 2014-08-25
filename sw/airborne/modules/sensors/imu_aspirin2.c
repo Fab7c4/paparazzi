@@ -53,6 +53,7 @@ struct Imu imu;
 #ifndef PERIODIC_FREQUENCY
 #define PERIODIC_FREQUENCY 60
 #endif
+PRINT_CONFIG_VAR(PERIODIC_FREQUENCY)
 
 void imu_impl_init(void)
 {
@@ -86,6 +87,7 @@ void imu_impl_init(void)
 #  if PERIODIC_FREQUENCY == 120
 #  else
 #  error PERIODIC_FREQUENCY should be either 60Hz or 120Hz. Otherwise manually fix the sensor rates
+  PRINT_CONFIG_VAR(PERIODIC_FREQUENCY)
 #  endif
 #endif
   aspirin2_mpu60x0.buf[0] = MPU60X0_REG_CONFIG;
