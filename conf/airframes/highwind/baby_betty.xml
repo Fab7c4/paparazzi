@@ -12,13 +12,13 @@
 <airframe name="babybetty">
 
   <servos driver="Pwm">
-    <servo name="AILERON_LEFT" no="0" min="1300" neutral="1500" max="1700"/>
-    <servo name="AILERON_RIGHT" no="1" min="1300" neutral="1500" max="1700"/>
-    <servo name="FLAP_LEFT"  no="2" min="1300" neutral="1500" max="1700"/>
-    <servo name="FLAP_RIGHT"  no="3" min="1300" neutral="1500" max="1700"/>
-    <servo name="ELEVATOR"  no="4" min="1300" neutral="1500" max="1700"/>
-    <servo name="RUDDER"  no="5" min="1300" neutral="1500" max="1700"/>
-    <servo name="THROTTLE" no="6" min="1300" neutral="1000" max="1700"/>
+    <servo name="AILERON_LEFT" no="0" min="1000" neutral="1500" max="2000"/>
+    <servo name="AILERON_RIGHT" no="1" min="1000" neutral="1500" max="2000"/>
+    <servo name="FLAP_LEFT"  no="2" min="1000" neutral="1500" max="2000"/>
+    <servo name="FLAP_RIGHT"  no="3" min="1000" neutral="1500" max="2000"/>
+    <servo name="ELEVATOR"  no="4" min="1000" neutral="1500" max="2000"/>
+    <servo name="RUDDER"  no="5" min="1000" neutral="1500" max="2000"/>
+    <servo name="THROTTLE" no="6" min="1000" neutral="1000" max="2000"/>
   </servos>
 
   <commands>
@@ -72,8 +72,8 @@
     <set command="RC_AILERON_LEFT" value="@ROLL"/>
     <set command="RC_AILERON_RIGHT" value="@ROLL"/>
 <!-- servo's in the same directen, use negative to roll -->
-    <set command="RC_FLAP_LEFT" value="@AUX2"/>
-    <set command="RC_FLAP_RIGHT" value="-@AUX2"/>
+    <set command="RC_FLAP_LEFT" value="@AUX3"/>
+    <set command="RC_FLAP_RIGHT" value="-@AUX3"/>
 <!-- the same because used for lift when servo's in same direction
 use negative when in mirror -->
     <set command="RC_RUDDER" value="-@YAW"/>
