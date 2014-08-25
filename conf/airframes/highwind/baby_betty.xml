@@ -269,7 +269,7 @@ use negative when in mirror -->
 
     <subsystem name="set_servo"/>
     <subsystem name="actuators"     type="pwm">
-      <define name="SERVO_HZ" value="30"/><!-- because of analog servo, minimum 20 -->
+      <define name="SERVO_HZ" value="50"/><!-- because of analog servo, minimum 20 -->
       <define name="USE_SERVOS_7AND8"/><!-- no i2c 1-->
     </subsystem>
 
