@@ -285,7 +285,7 @@ use negative when in mirror -->
     
 	<subsystem name="telemetry"     type="transparent">
 		<configure name="TELEMETRY_FREQUENCY" value="800"/> <!--jonas: changed the frequency of the telemetry file to 1K -->
-	     <configure name="MODEM_BAUD"  value="B921600"/><!--jonas: changed baudrate for UART2 to B921600 -->
+	     <configure name="MODEM_BAUD"  value="B57600"/><!--jonas: changed baudrate for UART2 to B921600 -->
 	     <configure name="MODEM_PORT"  value="UART2"/>
 	</subsystem>
     
