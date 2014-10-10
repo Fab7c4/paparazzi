@@ -146,6 +146,20 @@
   }\
 }*/
 
+#define PERIODIC_SEND_IMU_ALL_SCALED(_trans, _dev) {		\
+    DOWNLINK_SEND_IMU_ALL_SCALED(_trans, _dev,			\
+    &imu.accel.x,		\
+    &imu.accel.y,		\
+    &imu.accel.z,       \
+    &imu.gyro.p,        \
+    &imu.gyro.q,        \
+    &imu.gyro.r,        \
+    &imu.mag.x,         \
+    &imu.mag.y,         \
+    &imu.mag.z);		\
+}
+
+
 #define PERIODIC_SEND_IMU_GYRO_SCALED(_trans, _dev) {		\
     DOWNLINK_SEND_IMU_GYRO_SCALED(_trans, _dev,			\
                  &imu.gyro.p,		\
@@ -202,6 +216,7 @@
                            &baro.absolute,      \
                            &baro.differential); \
   }
+
 
 
 
