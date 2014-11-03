@@ -30,6 +30,9 @@ struct Imu imu;
 
 void imu_init(void) {
 
+  //init sequence number
+  imu.sequence_number = 0;
+
   /* initialises neutrals */
   RATES_ASSIGN(imu.gyro_neutral,  IMU_GYRO_P_NEUTRAL,  IMU_GYRO_Q_NEUTRAL,  IMU_GYRO_R_NEUTRAL);
 

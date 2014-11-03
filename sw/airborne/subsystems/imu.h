@@ -50,6 +50,7 @@ struct Imu {
   struct Int32Vect3 mag_unscaled;     ///< unscaled magnetometer measurements
   struct Int32Quat  body_to_imu_quat; ///< rotation from body to imu frame as a unit quaternion
   struct Int32RMat  body_to_imu_rmat; ///< rotation from body to imu frame as a rotation matrix
+  uint32_t sequence_number;
 };
 
 /** abstract IMU interface providing floating point interface  */

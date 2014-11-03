@@ -147,7 +147,9 @@
 }*/
 
 #define PERIODIC_SEND_IMU_ALL_SCALED(_trans, _dev) {		\
-    DOWNLINK_SEND_IMU_ALL_SCALED(_trans, _dev,			\
+    imu.sequence_number++; \
+    DOWNLINK_SEND_IMU_ALL_SCALED(_trans, _dev, 			\
+    &imu.sequence_number, \
     &imu.accel.x,		\
     &imu.accel.y,		\
     &imu.accel.z,       \
