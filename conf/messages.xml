@@ -1036,13 +1036,14 @@
   </message>
 
 <message name="IMU_ALL_SCALED" id="138">
+	<field name="sequence_number"    type="uint32"/>
     <field name="ax"    type="int32" alt_unit="m/s2" alt_unit_coef="0.0009766"/>
     <field name="ay"    type="int32" alt_unit="m/s2" alt_unit_coef="0.0009766"/>
     <field name="az"    type="int32" alt_unit="m/s2" alt_unit_coef="0.0009766"/>
     <field name="gp"    type="int32" alt_unit="deg/s" alt_unit_coef="0.0139882"/>
     <field name="gq"    type="int32" alt_unit="deg/s" alt_unit_coef="0.0139882"/>
     <field name="gr"    type="int32" alt_unit="deg/s" alt_unit_coef="0.0139882"/>
-     <field name="mx"    type="int32" alt_unit="1" alt_unit_coef="0.0004883"/>
+    <field name="mx"    type="int32" alt_unit="1" alt_unit_coef="0.0004883"/>
     <field name="my"    type="int32" alt_unit="1" alt_unit_coef="0.0004883"/>
     <field name="mz"    type="int32" alt_unit="1" alt_unit_coef="0.0004883"/>
   </message>

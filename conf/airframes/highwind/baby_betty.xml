@@ -284,8 +284,8 @@ use negative when in mirror -->
     <define name="USE_I2C2"/>
     
 	<subsystem name="telemetry"     type="transparent">
-		<configure name="TELEMETRY_FREQUENCY" value="800"/> <!--jonas: changed the frequency of the telemetry file to 1K -->
-	     <configure name="MODEM_BAUD"  value="B57600"/><!--jonas: changed baudrate for UART2 to B921600 -->
+		<configure name="TELEMETRY_FREQUENCY" value="500"/> <!--jonas: changed the frequency of the telemetry file to 1K -->
+	     <configure name="MODEM_BAUD"  value="B115200"/><!--jonas: changed baudrate for UART2 to B921600 -->
 	     <configure name="MODEM_PORT"  value="UART2"/>
 	</subsystem>
     
