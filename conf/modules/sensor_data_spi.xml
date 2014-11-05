@@ -1,0 +1,23 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="sensor_data_spi">
+  <doc>
+    <description>Send sensor data over SPI</description>
+    <define name="SENSOR_DATA_FREQUENCY" value="200." />
+  </doc>
+    <depend require="airspeed_ets"/>
+  <header>
+    <file name="sensor_data_spi.h"/>
+  </header>
+  <init fun="sensor_data_spi_init()"/>
+  <periodic fun="sensor_data_spi_periodic()" freq="SENSOR_DATA_FREQUENCY"/>
+  <makefile>
+    <define name="SENSOR_DATA_SPI_LINK_DEVICE" value="spi1" />
+    <define name="SENSOR_DATA_SPI_LINK_SLAVE_NUMBER" value="SPI_SLAVE5" />
+    <define name="SPI_MASTER" value="1" />
+    <define name="USE_SPI1" value="1" />
+    <define name="USE_SPI_SLAVE5" value="1" />
+    <file name="sensor_data_spi.c"/>
+  </makefile>
+</module>
+

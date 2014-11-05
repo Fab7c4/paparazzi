@@ -243,7 +243,8 @@ use negative when in mirror -->
 	<define name="AIRSPEED_ETS_SCALE" value="1.0" description="sensor scale factor (default: 1.8)"/>
    	<define name="AIRSPEED_ETS_SYNC_SEND"/>	<!--jonas: flag for sending the airspeed messages  -->
    </load>
-   
+  
+   <load name="sensor_data_spi.xml"/> 
    <load name="servo_commands.xml"/> <!--jonas: added a module to receive servo commands, see the module for further information-->
    <load name="sys_mon.xml"/> <!--jonas: added a module so that Lisa sens system monitoring packages to server-->
 
