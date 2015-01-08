@@ -10,8 +10,8 @@ ifneq ($(GPS_LED),none)
 endif
 
 ap.srcs += $(SRC_SUBSYSTEMS)/gps.c
-ap.CFLAGS += -DGPS_TYPE_H=\"subsystems/gps/gps_piksi.h\"
-ap.srcs += $(SRC_SUBSYSTEMS)/gps/gps_piksi.c
+ap.CFLAGS += -DGPS_TYPE_H=\"subsystems/gps/gps_piksi_highwind.h\"
+ap.srcs += $(SRC_SUBSYSTEMS)/gps/gps_piksi_highwind.c
 
 
 nps.CFLAGS += -DUSE_GPS

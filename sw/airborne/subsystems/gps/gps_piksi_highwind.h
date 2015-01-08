@@ -19,8 +19,8 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef GPS_PIKSI_H
-#define GPS_PIKSI_H
+#ifndef GPS_PIKSI_HIGHWIND_H
+#define GPS_PIKSI_HIGHWIND_H
 
 #include "mcu_periph/uart.h"
 
