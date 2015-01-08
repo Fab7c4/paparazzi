@@ -185,7 +185,15 @@
   </message>
 
   <!-- ID 23 is free -->
-  <!-- ID 24 is free -->
+  <message name="SERVO_COMMANDS" id="24" link="forwarded">
+     <field name="servo_1" type="int16"/>
+     <field name="servo_2" type="int16"/>
+     <field name="servo_3" type="int16"/>
+     <field name="servo_4" type="int16"/>
+     <field name="servo_5" type="int16"/>
+     <field name="servo_6" type="int16"/>
+     <field name="servo_7" type="int16"/>
+   </message>
 
   <message name="SVINFO" id="25">
     <field name="chn" type="uint8"/>
@@ -1072,7 +1080,7 @@
     <field name="est_r_d"       type="float" alt_unit="deg/s^2" alt_unit_coef="57.29578"/>
   </message>
 
-<message name="IMU_ALL_SCALED" id="138">
+<message name="IMU_ALL_SCALED" id="228">
 	<field name="sequence_number"    type="uint32"/>
     <field name="ax"    type="int32" alt_unit="m/s2" alt_unit_coef="0.0009766"/>
     <field name="ay"    type="int32" alt_unit="m/s2" alt_unit_coef="0.0009766"/>

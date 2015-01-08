@@ -5,7 +5,7 @@
     <description>Send sensor data over SPI</description>
     <define name="SENSOR_DATA_FREQUENCY" value="200." />
   </doc>
-    <depend require="airspeed_ets"/>
+    <depends>airspeed_ets</depends>
   <header>
     <file name="sensor_data_spi.h"/>
   </header>
