@@ -234,7 +234,6 @@ use negative when in mirror -->
  <modules main_freq="800"> <!--jonas: Changed the frequency of the main loop to 1K hz-->
  
    <!--load name="vehicle_interface_overo_link.xml"/-->
-   <load name="gps_ubx_ucenter.xml"/>
 
     <load name="airspeed_ets.xml"> <!--jonas: module to use airspeed_ets and send the airspeed messages -->
 
@@ -276,14 +275,17 @@ use negative when in mirror -->
 
     <subsystem name="telemetry"     type="transparent"/>
     <subsystem name="imu"           type="aspirin_v2.1"/>
-    <subsystem name="gps"           type="ublox"/>
+    <subsystem name="gps"           type="piksi">
+      <configure name="GPS_PORT" value="UART3"/>
+      <configure name="GPS_BAUD" value="B57600"/>
+    </subsystem>
     <subsystem name="stabilization" type="int_quat"/>
     <subsystem name="ahrs"          type="int_cmpl_quat"/>
       <define name="AHRS_GRAVITY_UPDATE_COORDINATED_TURN" value="TRUE"/>
       <define name="AHRS_GRAVITY_UPDATE_NORM_HEURISTIC" value="TRUE"/>
     <subsystem name="ins"/>
-    <define name="USE_I2C2"/>
-    
+   	<define name="USE_I2C2"/>
+ 
 	<subsystem name="telemetry"     type="transparent">
 		<configure name="TELEMETRY_FREQUENCY" value="500"/> <!--jonas: changed the frequency of the telemetry file to 1K -->
 	     <configure name="MODEM_BAUD"  value="B115200"/><!--jonas: changed baudrate for UART2 to B921600 -->
