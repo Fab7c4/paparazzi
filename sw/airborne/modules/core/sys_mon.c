@@ -23,28 +23,27 @@
 #include "core/sys_mon.h"
 #include "mcu_periph/sys_time.h"
 
-#ifdef USE_USB_SERIAL
-#include "mcu_periph/usb_serial.h"
-#endif
-
-/* Global system monitor data (averaged over 1 sec) */
+/** Global system monitor data (averaged over 1 sec) */
 struct SysMon sys_mon;
 
 /* Local vars */
-uint16_t n_periodic;
-uint16_t n_event;
-uint32_t periodic_timer;
-uint32_t periodic_cycle;
-uint32_t event_timer;
-uint32_t sum_time_periodic;  ///< in usec
-uint32_t sum_cycle_periodic; ///< in usec
-uint32_t sum_time_event;     ///< in usec
-uint32_t min_time_event;     ///< in usec
-uint32_t sum_n_event;
+static uint16_t n_periodic;
+static uint16_t n_event;
+static uint32_t periodic_timer;
+static uint32_t periodic_cycle;
+static uint32_t event_timer;
+static uint32_t sum_time_periodic;  ///< in usec
+static uint32_t sum_cycle_periodic; ///< in usec
+static uint32_t sum_time_event;     ///< in usec
+static uint32_t min_time_event;     ///< in usec
+static uint32_t sum_n_event;
 
-void init_sysmon(void) {
+void init_sysmon(void)
+{
   sys_mon.cpu_load = 0;
   sys_mon.periodic_time = 0;
+  sys_mon.periodic_time_min = 0xFFFF;
+  sys_mon.periodic_time_max = 0;
   sys_mon.periodic_cycle = 0;
   sys_mon.periodic_cycle_min = 0xFFFF;
   sys_mon.periodic_cycle_max = 0;
@@ -62,12 +61,10 @@ void init_sysmon(void) {
 
 #include "mcu_periph/uart.h"
 #include "messages.h"
-#ifndef DOWNLINK_DEVICE
-#define DOWNLINK_DEVICE DOWNLINK_AP_DEVICE
-#endif
 #include "subsystems/datalink/downlink.h"
 
-void periodic_report_sysmon(void) {
+void periodic_report_sysmon(void)
+{
   /** Report system status at low frequency */
   if (n_periodic > 0) {
     sys_mon.periodic_time = Max(sum_time_periodic / n_periodic, 1);
@@ -75,18 +72,25 @@ void periodic_report_sysmon(void) {
     sys_mon.cpu_load = 100 * sys_mon.periodic_cycle / sys_mon.periodic_time;
     sys_mon.event_number = sum_n_event / n_periodic;
 
-    DOWNLINK_SEND_SYS_MON(DefaultChannel, DefaultDevice, &sys_mon.periodic_time, &sys_mon.periodic_cycle, &sys_mon.periodic_cycle_min, &sys_mon.periodic_cycle_max, &sys_mon.event_number, &sys_mon.cpu_load);
+    DOWNLINK_SEND_SYS_MON(DefaultChannel, DefaultDevice, &sys_mon.periodic_time,
+                          &sys_mon.periodic_time_min, &sys_mon.periodic_time_max,
+                          &sys_mon.periodic_cycle, &sys_mon.periodic_cycle_min,
+                          &sys_mon.periodic_cycle_max, &sys_mon.event_number,
+                          &sys_mon.cpu_load);
   }
 
   n_periodic = 0;
   sum_time_periodic = 0;
   sum_cycle_periodic = 0;
   sum_n_event = 0;
+  sys_mon.periodic_time_min = 0xFFFF;
+  sys_mon.periodic_time_max = 0;
   sys_mon.periodic_cycle_min = 0xFFFF;
   sys_mon.periodic_cycle_max = 0;
 }
 
-void periodic_sysmon(void) {
+void periodic_sysmon(void)
+{
   /** Estimate periodic task cycle time */
   uint32_t periodic_usec = SysTimeTimer(periodic_timer);
   SysTimeTimerStart(periodic_timer);
@@ -96,11 +100,21 @@ void periodic_sysmon(void) {
   periodic_cycle = periodic_usec - n_event * min_time_event;
   sum_cycle_periodic += periodic_cycle;
 
+  /* remember min and max periodic times */
+  if (periodic_usec < sys_mon.periodic_time_min) {
+    sys_mon.periodic_time_min = periodic_usec;
+  }
+  if (periodic_usec > sys_mon.periodic_time_max) {
+    sys_mon.periodic_time_max = periodic_usec;
+  }
+
   /* remember min and max periodic cycle times */
-  if (periodic_cycle < sys_mon.periodic_cycle_min)
+  if (periodic_cycle < sys_mon.periodic_cycle_min) {
     sys_mon.periodic_cycle_min = periodic_cycle;
-  if (periodic_cycle > sys_mon.periodic_cycle_max)
+  }
+  if (periodic_cycle > sys_mon.periodic_cycle_max) {
     sys_mon.periodic_cycle_max = periodic_cycle;
+  }
 
   n_periodic++;
   sum_n_event += n_event;
@@ -108,12 +122,14 @@ void periodic_sysmon(void) {
   sum_time_event = 0;
 }
 
-void event_sysmon(void) {
+void event_sysmon(void)
+{
   /** Store event calls total time and number of calls between two periodic calls */
   if (n_event > 0) {
     uint32_t t = SysTimeTimer(event_timer);
-    if (t < min_time_event)
+    if (t < min_time_event) {
       min_time_event = t;
+    }
     sum_time_event += t;
   }
   SysTimeTimerStart(event_timer);

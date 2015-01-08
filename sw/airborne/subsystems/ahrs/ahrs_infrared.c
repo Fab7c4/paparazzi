@@ -39,10 +39,31 @@
 
 float heading;
 
+#if PERIODIC_TELEMETRY
+#include "subsystems/datalink/telemetry.h"
+
+static void send_infrared(struct transport_tx *trans, struct link_device *dev) {
+  pprz_msg_send_IR_SENSORS(trans, dev, AC_ID,
+      &infrared.value.ir1, &infrared.value.ir2, &infrared.pitch, &infrared.roll, &infrared.top);
+}
+
+static void send_status(struct transport_tx *trans, struct link_device *dev) {
+  uint16_t contrast = abs(infrared.roll) + abs(infrared.pitch) + abs(infrared.top);
+  uint8_t mde = 3;
+  if (contrast < 50) mde = 7;
+  pprz_msg_send_STATE_FILTER_STATUS(trans, dev, AC_ID, &mde, &contrast);
+}
+#endif
+
 void ahrs_init(void) {
   ahrs.status = AHRS_UNINIT;
 
   heading = 0.;
+
+#if PERIODIC_TELEMETRY
+  register_periodic_telemetry(DefaultPeriodic, "IR_SENSORS", send_infrared);
+  register_periodic_telemetry(DefaultPeriodic, "STATE_FILTER_STATUS", send_status);
+#endif
 }
 
 void ahrs_align(void) {
@@ -52,7 +73,7 @@ void ahrs_align(void) {
   ahrs.status = AHRS_RUNNING;
 }
 
-void ahrs_propagate(void) {
+void ahrs_propagate(float dt __attribute__((unused))) {
   struct FloatRates body_rate = { 0., 0., 0. };
 #ifdef ADC_CHANNEL_GYRO_P
   body_rate.p = RATE_FLOAT_OF_BFP(imu.gyro.p);
@@ -66,11 +87,6 @@ void ahrs_propagate(void) {
   stateSetBodyRates_f(&body_rate);
 }
 
-void ahrs_update_accel(void) {
-}
-
-void ahrs_update_mag(void) {
-}
 
 void ahrs_update_gps(void) {
 

@@ -37,9 +37,6 @@
 #include "messages.h"
 #include "subsystems/datalink/downlink.h"
 
-#ifndef DOWNLINK_DEVICE
-#define DOWNLINK_DEVICE DOWNLINK_AP_DEVICE
-#endif
 
 #if !defined APOGEE_LOWPASS_FILTER && !defined  APOGEE_SMPLRT_DIV
 #define APOGEE_LOWPASS_FILTER MPU60X0_DLPF_42HZ
@@ -61,6 +58,14 @@ PRINT_CONFIG_VAR(APOGEE_ACCEL_RANGE)
 
 struct ImuApogee imu_apogee;
 
+// baro config will be done later in bypass mode
+bool_t configure_baro_slave(Mpu60x0ConfigSet mpu_set, void *mpu);
+
+bool_t configure_baro_slave(Mpu60x0ConfigSet mpu_set __attribute__((unused)), void *mpu __attribute__((unused)))
+{
+  return TRUE;
+}
+
 void imu_impl_init(void)
 {
   /////////////////////////////////////////////////////////////////////
@@ -71,12 +76,16 @@ void imu_impl_init(void)
   imu_apogee.mpu.config.dlpf_cfg = APOGEE_LOWPASS_FILTER;
   imu_apogee.mpu.config.gyro_range = APOGEE_GYRO_RANGE;
   imu_apogee.mpu.config.accel_range = APOGEE_ACCEL_RANGE;
+  // set MPU in bypass mode for the baro
+  imu_apogee.mpu.config.nb_slaves = 1;
+  imu_apogee.mpu.config.slaves[0].configure = &configure_baro_slave;
+  imu_apogee.mpu.config.i2c_bypass = TRUE;
 
   imu_apogee.gyr_valid = FALSE;
   imu_apogee.acc_valid = FALSE;
 }
 
-void imu_periodic( void )
+void imu_periodic(void)
 {
   // Start reading the latest gyroscope data
   mpu60x0_i2c_periodic(&imu_apogee.mpu);
@@ -84,20 +93,24 @@ void imu_periodic( void )
   //RunOnceEvery(10,imu_apogee_downlink_raw());
 }
 
-void imu_apogee_downlink_raw( void )
+void imu_apogee_downlink_raw(void)
 {
-  DOWNLINK_SEND_IMU_GYRO_RAW(DefaultChannel, DefaultDevice,&imu.gyro_unscaled.p,&imu.gyro_unscaled.q,&imu.gyro_unscaled.r);
-  DOWNLINK_SEND_IMU_ACCEL_RAW(DefaultChannel, DefaultDevice,&imu.accel_unscaled.x,&imu.accel_unscaled.y,&imu.accel_unscaled.z);
+  DOWNLINK_SEND_IMU_GYRO_RAW(DefaultChannel, DefaultDevice, &imu.gyro_unscaled.p, &imu.gyro_unscaled.q,
+                             &imu.gyro_unscaled.r);
+  DOWNLINK_SEND_IMU_ACCEL_RAW(DefaultChannel, DefaultDevice, &imu.accel_unscaled.x, &imu.accel_unscaled.y,
+                              &imu.accel_unscaled.z);
 }
 
 
-void imu_apogee_event( void )
+void imu_apogee_event(void)
 {
   // If the itg3200 I2C transaction has succeeded: convert the data
   mpu60x0_i2c_event(&imu_apogee.mpu);
   if (imu_apogee.mpu.data_available) {
-    RATES_ASSIGN(imu.gyro_unscaled, imu_apogee.mpu.data_rates.rates.p, -imu_apogee.mpu.data_rates.rates.q, -imu_apogee.mpu.data_rates.rates.r);
-    VECT3_ASSIGN(imu.accel_unscaled, imu_apogee.mpu.data_accel.vect.x, -imu_apogee.mpu.data_accel.vect.y, -imu_apogee.mpu.data_accel.vect.z);
+    RATES_ASSIGN(imu.gyro_unscaled, imu_apogee.mpu.data_rates.rates.p, -imu_apogee.mpu.data_rates.rates.q,
+                 -imu_apogee.mpu.data_rates.rates.r);
+    VECT3_ASSIGN(imu.accel_unscaled, imu_apogee.mpu.data_accel.vect.x, -imu_apogee.mpu.data_accel.vect.y,
+                 -imu_apogee.mpu.data_accel.vect.z);
     imu_apogee.mpu.data_available = FALSE;
     imu_apogee.gyr_valid = TRUE;
     imu_apogee.acc_valid = TRUE;

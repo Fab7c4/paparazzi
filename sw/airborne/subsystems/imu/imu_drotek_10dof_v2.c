@@ -37,9 +37,21 @@
 #include "mcu_periph/i2c.h"
 
 #if !defined DROTEK_2_LOWPASS_FILTER && !defined  DROTEK_2_SMPLRT_DIV
+#if (PERIODIC_FREQUENCY == 60) || (PERIODIC_FREQUENCY == 120)
+/* Accelerometer: Bandwidth 44Hz, Delay 4.9ms
+ * Gyroscope: Bandwidth 42Hz, Delay 4.8ms sampling 1kHz
+ */
 #define DROTEK_2_LOWPASS_FILTER MPU60X0_DLPF_42HZ
 #define DROTEK_2_SMPLRT_DIV 9
-PRINT_CONFIG_MSG("Gyro/Accel output rate is 100Hz")
+PRINT_CONFIG_MSG("Gyro/Accel output rate is 100Hz at 1kHz internal sampling")
+#elif PERIODIC_FREQUENCY == 512
+/* Accelerometer: Bandwidth 260Hz, Delay 0ms
+ * Gyroscope: Bandwidth 256Hz, Delay 0.98ms sampling 8kHz
+ */
+#define DROTEK_2_LOWPASS_FILTER MPU60X0_DLPF_256HZ
+#define DROTEK_2_SMPLRT_DIV 3
+PRINT_CONFIG_MSG("Gyro/Accel output rate is 2kHz at 8kHz internal sampling")
+#endif
 #endif
 PRINT_CONFIG_VAR(DROTEK_2_SMPLRT_DIV)
 PRINT_CONFIG_VAR(DROTEK_2_LOWPASS_FILTER)
@@ -149,11 +161,13 @@ void imu_drotek2_event(void)
 /** callback function to configure hmc5883 mag
  * @return TRUE if mag configuration finished
  */
-bool_t imu_drotek2_configure_mag_slave(Mpu60x0ConfigSet mpu_set __attribute__ ((unused)), void* mpu __attribute__ ((unused)))
+bool_t imu_drotek2_configure_mag_slave(Mpu60x0ConfigSet mpu_set __attribute__((unused)),
+                                       void *mpu __attribute__((unused)))
 {
   hmc58xx_start_configure(&imu_drotek2.hmc);
-  if (imu_drotek2.hmc.initialized)
+  if (imu_drotek2.hmc.initialized) {
     return TRUE;
-  else
+  } else {
     return FALSE;
+  }
 }

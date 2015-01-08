@@ -22,6 +22,7 @@
 
 #include "sensors/baro_hca.h"
 #include "mcu_periph/i2c.h"
+#include "subsystems/abi.h"
 #include <math.h>
 
 //Messages
@@ -29,15 +30,22 @@
 #include "messages.h"
 #include "subsystems/datalink/downlink.h"
 
-#ifndef DOWNLINK_DEVICE
-#define DOWNLINK_DEVICE DOWNLINK_AP_DEVICE
-#endif
 
 #define BARO_HCA_ADDR 0xF0
 #define BARO_HCA_MAX_PRESSURE 1100 // mBar
 #define BARO_HCA_MIN_PRESSURE 800 // mBar
 #define BARO_HCA_MAX_OUT 27852 //dec
 #define BARO_HCA_MIN_OUT 1638 //dec
+
+// FIXME
+#ifndef BARO_HCA_SCALE
+#define BARO_HCA_SCALE 1.0
+#endif
+
+// FIXME
+#ifndef BARO_HCA_PRESSURE_OFFSET
+#define BARO_HCA_PRESSURE_OFFSET 101325.0
+#endif
 
 #ifndef BARO_HCA_I2C_DEV
 #define BARO_HCA_I2C_DEV i2c0
@@ -51,38 +59,46 @@ float baro_hca_p;
 
 struct i2c_transaction baro_hca_i2c_trans;
 
-void baro_hca_init( void ) {
+void baro_hca_init(void)
+{
   pBaroRaw = 0;
   baro_hca_valid = TRUE;
   baro_hca_i2c_trans.status = I2CTransDone;
 }
 
 
-void baro_hca_read_periodic( void ) {
-  if (baro_hca_i2c_trans.status == I2CTransDone){
+void baro_hca_read_periodic(void)
+{
+  if (baro_hca_i2c_trans.status == I2CTransDone) {
     i2c_receive(&BARO_HCA_I2C_DEV, &baro_hca_i2c_trans, BARO_HCA_ADDR, 2);
   }
 }
 
 
-void baro_hca_read_event( void ) {
+void baro_hca_read_event(void)
+{
   pBaroRaw = 0;
   // Get raw altimeter from buffer
   pBaroRaw = ((uint16_t)baro_hca_i2c_trans.buf[0] << 8) | baro_hca_i2c_trans.buf[1];
 
-  if (pBaroRaw == 0)
+  if (pBaroRaw == 0) {
     baro_hca_valid = FALSE;
-  else
+  } else {
     baro_hca_valid = TRUE;
+  }
 
 
   if (baro_hca_valid) {
     //Cut RAW Min and Max
-    if (pBaroRaw < BARO_HCA_MIN_OUT)
+    if (pBaroRaw < BARO_HCA_MIN_OUT) {
       pBaroRaw = BARO_HCA_MIN_OUT;
-    if (pBaroRaw > BARO_HCA_MAX_OUT)
+    }
+    if (pBaroRaw > BARO_HCA_MAX_OUT) {
       pBaroRaw = BARO_HCA_MAX_OUT;
+    }
 
+    float pressure = BARO_HCA_SCALE * (float)pBaroRaw + BARO_HCA_PRESSURE_OFFSET;
+    AbiSendMsgBARO_ABS(BARO_HCA_SENDER_ID, &pressure);
   }
   baro_hca_i2c_trans.status = I2CTransDone;
 
@@ -91,7 +107,7 @@ void baro_hca_read_event( void ) {
 #ifdef SENSOR_SYNC_SEND
   DOWNLINK_SEND_BARO_ETS(DefaultChannel, DefaultDevice, &pBaroRaw, &foo, &bar)
 #else
-    RunOnceEvery(10, DOWNLINK_SEND_BARO_ETS(DefaultChannel, DefaultDevice, &pBaroRaw, &foo, &bar));
+  RunOnceEvery(10, DOWNLINK_SEND_BARO_ETS(DefaultChannel, DefaultDevice, &pBaroRaw, &foo, &bar));
 #endif
 
 }

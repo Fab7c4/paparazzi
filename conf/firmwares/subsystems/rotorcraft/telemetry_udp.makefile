@@ -1,8 +1,1 @@
-
-# Udp telemetry
-
-ap.CFLAGS += -DDOWNLINK -DDOWNLINK_DEVICE=Udp
-ap.CFLAGS += -DDOWNLINK_TRANSPORT=PprzTransport -DDATALINK=UDP
-ap.srcs += subsystems/datalink/downlink.c subsystems/datalink/udp.c subsystems/datalink/pprz_transport.c
-ap.srcs += $(SRC_FIRMWARE)/datalink.c $(SRC_FIRMWARE)/telemetry.c
-ap.srcs += fms/fms_network.c
+$(error The telemetry_udp subsystem has been renamed, please replace <subsystem name="telemetry" type="udp"/> with <subsystem name="telemetry" type="transparent_udp"/> in your airframe file.)

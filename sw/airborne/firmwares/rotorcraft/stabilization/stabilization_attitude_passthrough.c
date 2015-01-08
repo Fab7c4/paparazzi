@@ -28,7 +28,9 @@
  * software onboard or just does not need it at all.
  */
 
+#include "state.h"
 #include "firmwares/rotorcraft/stabilization.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "paparazzi.h"
 
@@ -39,32 +41,34 @@
 struct Int32Eulers stab_att_sp_euler;
 
 
-void stabilization_attitude_init(void) {
+void stabilization_attitude_init(void)
+{
   INT_EULERS_ZERO(stab_att_sp_euler);
 }
 
-
-void stabilization_attitude_read_rc(bool_t in_flight) {
+void stabilization_attitude_read_rc(bool_t in_flight, bool_t in_carefree, bool_t coordinated_turn)
+{
   //Read from RC
-  stabilization_attitude_read_rc_setpoint_eulers(&stab_att_sp_euler, in_flight);
+  stabilization_attitude_read_rc_setpoint_eulers(&stab_att_sp_euler, in_flight, in_carefree, coordinated_turn);
 }
 
-
-void stabilization_attitude_enter(void) {
+void stabilization_attitude_enter(void)
+{
 
 }
 
-void stabilization_attitude_run(bool_t  in_flight __attribute__ ((unused))) {
+void stabilization_attitude_run(bool_t  in_flight __attribute__((unused)))
+{
 
   /* For roll and pitch we pass trough the desired angles as stabilization command */
-  const int32_t angle2cmd = (MAX_PPRZ/TRAJ_MAX_BANK);
+  const int32_t angle2cmd = (MAX_PPRZ / TRAJ_MAX_BANK);
   stabilization_cmd[COMMAND_ROLL] = stab_att_sp_euler.phi * angle2cmd;
   stabilization_cmd[COMMAND_PITCH] = stab_att_sp_euler.theta * angle2cmd;
 
   //TODO: Fix yaw with PID controller
   int32_t yaw_error = stateGetNedToBodyEulers_i()->psi - stab_att_sp_euler.psi;
   INT32_ANGLE_NORMALIZE(yaw_error);
-  //	stabilization_cmd[COMMAND_YAW] = yaw_error * MAX_PPRZ / INT32_ANGLE_PI;
+  //  stabilization_cmd[COMMAND_YAW] = yaw_error * MAX_PPRZ / INT32_ANGLE_PI;
 
   /* bound the result */
   BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);
@@ -72,13 +76,26 @@ void stabilization_attitude_run(bool_t  in_flight __attribute__ ((unused))) {
   BoundAbs(stabilization_cmd[COMMAND_YAW], MAX_PPRZ);
 }
 
-void stabilization_attitude_set_failsafe_setpoint(void) {
+void stabilization_attitude_set_failsafe_setpoint(void)
+{
   stab_att_sp_euler.phi = 0;
   stab_att_sp_euler.theta = 0;
   stab_att_sp_euler.psi = stateGetNedToBodyEulers_i()->psi;
 }
 
-void stabilization_attitude_set_from_eulers_i(struct Int32Eulers *sp_euler) {
-  memcpy(&stab_att_sp_euler, sp_euler, sizeof(struct Int32Eulers));
+void stabilization_attitude_set_rpy_setpoint_i(struct Int32Eulers *rpy)
+{
+  memcpy(&stab_att_sp_euler, rpy, sizeof(struct Int32Eulers));
 }
 
+void stabilization_attitude_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t heading)
+{
+  /* Rotate horizontal commands to body frame by psi */
+  int32_t psi = stateGetNedToBodyEulers_i()->psi;
+  int32_t s_psi, c_psi;
+  PPRZ_ITRIG_SIN(s_psi, psi);
+  PPRZ_ITRIG_COS(c_psi, psi);
+  stab_att_sp_euler.phi = (-s_psi * cmd->x + c_psi * cmd->y) >> INT32_TRIG_FRAC;
+  stab_att_sp_euler.theta = -(c_psi * cmd->x + s_psi * cmd->y) >> INT32_TRIG_FRAC;
+  stab_att_sp_euler.psi = heading;
+}

@@ -56,7 +56,7 @@
 
 /* not compatible with PWM1 */
 #define ADC_0 AdcBank1(6)
-#ifdef USE_ADC_0
+#if USE_ADC_0
 #ifndef USE_AD1
 #define USE_AD1
 #endif
@@ -105,6 +105,10 @@
 #define SERVO_REG_1 PWMMR5
 #endif
 
-#define BOARD_HAS_BARO 1
+
+/* by default activate onboard baro */
+#ifndef USE_BARO_BOARD
+#define USE_BARO_BOARD 1
+#endif
 
 #endif /* CONFIG_NAVGO_V1_0_H */

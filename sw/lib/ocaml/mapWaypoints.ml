@@ -26,7 +26,12 @@ module LL = Latlong
 open Printf
 open LL
 
-let s = 6.
+module CL = ContrastLabel
+
+(*
+ * Waypoint label offsets
+ *)
+let s = 6. (* x offset *)
 
 class group = fun ?(color="red") ?(editable=true) ?(show_moved=false) (geomap:MapCanvas.widget) ->
   let g = GnoCanvas.group geomap#canvas#root in
@@ -66,9 +71,10 @@ object (self)
   val mutable x0 = 0.
   val mutable y0 = 0.
 
-  val label = GnoCanvas.text wpt_group ~props:[`TEXT name; `X s; `Y 0.; `ANCHOR `SW; `FILL_COLOR "green"]
+  val label = new CL.widget ~name:name ~color:"white" s 0. wpt_group
   val mutable name = name (* FIXME: already in label ! *)
   val mutable alt = alt
+  val mutable ground_alt = 0.
   val mutable moved = None
   val mutable deleted = false
   val mutable commit_cb = None
@@ -84,8 +90,9 @@ object (self)
   method set_name n =
     if n <> name then begin
       name <- n;
-      label#set [`TEXT name]
+      label#set_name name
     end
+  method geomap = geomap
   method alt = alt
   method label = label
   method xy = let a = wpt_group#i2w_affine in (a.(4), a.(5))
@@ -138,8 +145,9 @@ object (self)
       ~value:alt ~lower:(-100.) ~upper:10000.
       ~step_incr:1. ~page_incr:10.0 ~page_size:0. () in
     ea#set_adjustment adj;
+    ea#set_value alt; (* this should be done by set_adjustment but seems to fail on ubuntu 13.10 (at least) *)
 
-    let agl = alt -. float (try Srtm.of_wgs84 wgs84 with _ -> 0) in
+    let agl = alt -. (try float (Srtm.of_wgs84 initial_wgs84) with _ -> ground_alt) in
     let agl_lab  = GMisc.label ~text:(sprintf " AGL: %4.0fm" agl) ~packing:ha#add () in
     let plus10= GButton.button ~label:"+10" ~packing:ha#add () in
     let change_alt = fun x ->
@@ -147,10 +155,12 @@ object (self)
     ignore(minus10#connect#pressed (fun _ -> change_alt (-10.)));
     ignore(plus10#connect#pressed (fun _ -> change_alt (10.)));
 
+    (* called when ok button is clicked in WP Edit dialog *)
     let callback = fun _ ->
+      geomap#edit_georef_name name ename#text;
       self#set_name ename#text;
       alt <- ea#value;
-      label#set [`TEXT name];
+      label#set_name name;
       set_coordinates ();
       updated ();
       if wpts_group#show_moved then
@@ -178,6 +188,7 @@ object (self)
       let delete_callback = fun () ->
         dialog#destroy ();
         self#delete ();
+        geomap#delete_georef name;
         updated ()
       in
       ignore(delete#connect#clicked ~callback:delete_callback)
@@ -196,7 +207,7 @@ object (self)
       try
         set_coordinates ();
         let wgs84 = self#pos in
-        let agl  = ea#value -. float (try Srtm.of_wgs84 wgs84 with _ -> 0) in
+        let agl  = ea#value -. (try float (Srtm.of_wgs84 wgs84) with _ -> ground_alt) in
         agl_lab#set_text (sprintf " AGL: %4.0fm" agl)
       with _ -> ()
     in
@@ -247,7 +258,7 @@ object (self)
   method moved = moved <> None
   method reset_moved () =
     match moved with
-        None -> ()
+      | None -> ()
       | Some x ->
         Glib.Timeout.remove x;
         item#affine_absolute rotation_45;
@@ -270,14 +281,16 @@ object (self)
 
     let new_pos = ecef_distance current_ecef new_ecef > 2. in
     match moved, new_pos with
-        None, true ->
+      | None, _ ->
           self#move dx dy;
           alt <- alt+.dz;
           if update then updated ()
-      | (None, false) | (Some _, true) -> ()
+      | Some _, true -> ()
       | Some _, false -> self#reset_moved ()
+  method set_ground_alt ga = ground_alt <- ga
   method delete () =
     deleted <- true; (* BOF *)
+    geomap#delete_georef name;
     wpt_group#destroy ()
   method zoom (z:float) =
     if List.length wpt_group#get_items > 0 then

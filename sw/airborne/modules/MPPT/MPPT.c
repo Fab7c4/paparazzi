@@ -53,9 +53,6 @@ struct i2c_transaction mppt_trans;
 
 
 
-#ifndef DOWNLINK_DEVICE
-#define DOWNLINK_DEVICE DOWNLINK_AP_DEVICE
-#endif
 #include "mcu_periph/uart.h"
 #include "messages.h"
 #include "subsystems/datalink/downlink.h"
@@ -73,13 +70,15 @@ static uint8_t MPPT_status;
 static uint8_t data_index = 0xff;
 static int16_t MPPT_data[NB_DATA];
 
-void MPPT_init( void ) {
+void MPPT_init(void)
+{
   MPPT_mode = 0;
   MPPT_status = MPPT_STATUS_IDLE;
 }
 
 
-static void MPPT_ask( void ) {
+static void MPPT_ask(void)
+{
   data_index++;
   if (data_index >= NB_I2C_DATA) {
     /* Setting the current value */
@@ -95,7 +94,8 @@ static void MPPT_ask( void ) {
   MPPT_status = MPPT_STATUS_ASKING;
 }
 
-void MPPT_periodic( void ) {
+void MPPT_periodic(void)
+{
 
   if (mppt_trans.status == I2CTransSuccess) {
     switch (MPPT_status) {
@@ -125,8 +125,9 @@ void MPPT_periodic( void ) {
 
       case MPPT_STATUS_READING:
         /* We got 2 bytes */
-        if (data_index < NB_I2C_DATA)
-          MPPT_data[data_index] = (mppt_trans.buf[0]<<8) | mppt_trans.buf[1];
+        if (data_index < NB_I2C_DATA) {
+          MPPT_data[data_index] = (mppt_trans.buf[0] << 8) | mppt_trans.buf[1];
+        }
         MPPT_status = MPPT_STATUS_IDLE;
         break;
     }

@@ -53,26 +53,33 @@ IMU_DROTEK_2_SRCS   += peripherals/hmc58xx.c
 
 
 # set default i2c bus
-ifndef DROTEK_2_I2C_DEV
 ifeq ($(ARCH), lpc21)
-DROTEK_2_I2C_DEV=i2c0
+DROTEK_2_I2C_DEV ?= i2c0
 else ifeq ($(ARCH), stm32)
-DROTEK_2_I2C_DEV=i2c2
+DROTEK_2_I2C_DEV ?= i2c2
+endif
+
+ifeq ($(TARGET), ap)
+ifndef DROTEK_2_I2C_DEV
+$(error Error: DROTEK_2_I2C_DEV not configured!)
 endif
 endif
 
-# convert i2cx to upper case
+# convert i2cx to upper/lower case
 DROTEK_2_I2C_DEV_UPPER=$(shell echo $(DROTEK_2_I2C_DEV) | tr a-z A-Z)
+DROTEK_2_I2C_DEV_LOWER=$(shell echo $(DROTEK_2_I2C_DEV) | tr A-Z a-z)
 
-IMU_DROTEK_2_CFLAGS += -DDROTEK_2_I2C_DEV=$(DROTEK_2_I2C_DEV)
+IMU_DROTEK_2_CFLAGS += -DDROTEK_2_I2C_DEV=$(DROTEK_2_I2C_DEV_LOWER)
 IMU_DROTEK_2_CFLAGS += -DUSE_$(DROTEK_2_I2C_DEV_UPPER)
 
 
 # Keep CFLAGS/Srcs for imu in separate expression so we can assign it to other targets
-# see: conf/autopilot/subsystems/lisa_passthrough/imu_b2_v1.1.makefile for example
 
 ap.CFLAGS += $(IMU_DROTEK_2_CFLAGS)
 ap.srcs   += $(IMU_DROTEK_2_SRCS)
+
+test_imu.CFLAGS += $(IMU_DROTEK_2_CFLAGS)
+test_imu.srcs   += $(IMU_DROTEK_2_SRCS)
 
 
 #

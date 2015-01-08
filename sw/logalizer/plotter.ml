@@ -37,7 +37,9 @@ let pprz_float = function
     Pprz.Int i -> float i
   | Pprz.Float f -> f
   | Pprz.Int32 i -> Int32.to_float i
+  | Pprz.Int64 i -> Int64.to_float i
   | Pprz.String s -> float_of_string s
+  | Pprz.Char c -> float_of_string (String.make 1 c)
   | Pprz.Array _ -> 0.
 
 
@@ -50,8 +52,8 @@ let parse_dnd =
     | [s; c; m; f; factor] -> (s, c, m, f, Ocaml_tools.affine_transform factor)
     | _ -> failwith (Printf.sprintf "parse_dnd: %s" s)
 
-
-let colors = [|"red"; "blue"; "green"; "orange"; "purple"; "magenta"|]
+(* since tcl8.6 "green" refers to "darkgreen" and the former "green" is now "lime", but that is not available in older versions, so hardcode the color to #00ff00*)
+let colors = [|"red"; "blue"; "#00ff00"; "orange"; "purple"; "magenta"|]
 
 let labelled_entry = fun ?width_chars text value (h:GPack.box) ->
   let label = GMisc.label ~text ~packing:h#pack () in
@@ -76,7 +78,7 @@ type status =
   | Suspend (* Display is freezed, data are updated *)
   | Stop    (* Display is active, data are not updated *)
 
-class plot = fun ~size ~width ~height ~packing () ->
+class plot = fun ~size ~update_time ~width ~height ~packing () ->
   let curves = Hashtbl.create 3 in
   let bindings = Hashtbl.create 3 in
   object (self)
@@ -85,7 +87,7 @@ class plot = fun ~size ~width ~height ~packing () ->
     val mutable min = max_float
     val mutable max = -. max_float
     val mutable size = size
-    val mutable dt = 0.5
+    val mutable dt = update_time
     val mutable color_index = 0
     val mutable timer = None
     val mutable csts = ([] : float list)
@@ -93,6 +95,8 @@ class plot = fun ~size ~width ~height ~packing () ->
     val mutable auto_scale = true
     method auto_scale = auto_scale
     method set_auto_scale = fun x -> auto_scale <- x
+    method get_size = size
+    method get_dt = dt
     method min = min
     method set_min = fun x -> min <- x
     method max = max
@@ -320,9 +324,9 @@ class plot = fun ~size ~width ~height ~packing () ->
 let update_time = ref 0.5
 let size = ref 500
 
-type window = { title : string; geometry : string; curves : string list }
+type window = { title : string; geometry : string; update : float; size : int; curves : string list }
 
-let default_window = {title="Plotter"; geometry=""; curves=[]}
+let default_window = {title="Plotter"; geometry=""; update= !update_time; size= !size; curves=[]; }
 
 
 (** [index_of_fields s] Returns i if s matches x[i] else 0. *)
@@ -346,7 +350,7 @@ let rec plot_window = fun window ->
   Hashtbl.add windows oid [];
 
   ignore (plotter#parse_geometry window.geometry);
-  plotter#set_icon (Some (GdkPixbuf.from_file Env.icon_file));
+  plotter#set_icon (Some (GdkPixbuf.from_file Env.icon_rtp_file));
   let vbox = GPack.vbox ~packing:plotter#add () in
   let menubar = GMenu.menu_bar ~packing:vbox#pack () in
   let factory = new GMenu.factory menubar in
@@ -359,7 +363,7 @@ let rec plot_window = fun window ->
   let tooltips = GData.tooltips () in
 
   let width = 900 and height = 200 in
-  let plot = new plot ~size: !size ~width ~height ~packing:(vbox#pack ~expand:true) () in
+  let plot = new plot ~size:window.size ~update_time:window.update ~width ~height ~packing:(vbox#pack ~expand:true) () in
 
   let quit = fun () -> GMain.Main.quit (); exit 0 in
 
@@ -370,7 +374,7 @@ let rec plot_window = fun window ->
     if Hashtbl.length windows = 0 then
       quit () in
 
-  ignore (file_menu_fact#add_item "New" ~key:GdkKeysyms._N ~callback:(fun () -> plot_window {window with curves=[]}));
+  ignore (file_menu_fact#add_item "New" ~key:GdkKeysyms._N ~callback:(fun () -> plot_window {window with curves=[]; size=plot#get_size; update=plot#get_dt}));
 
   let reset_item = file_menu_fact#add_item "Reset" ~key:GdkKeysyms._L in
   let suspend_item = file_menu_fact#add_item "Suspend" ~key:GdkKeysyms._S in
@@ -400,14 +404,14 @@ let rec plot_window = fun window ->
   ignore (max_entry#connect#activate ~callback:(fun () -> if not plot#auto_scale then plot#set_max (float_of_string max_entry#text)));
 
   (* Update time slider *)
-  let adj = GData.adjustment ~lower:0.05 ~value: !update_time ~step_incr:0.1 ~upper:11.0 () in
+  let adj = GData.adjustment ~lower:0.05 ~value:plot#get_dt ~step_incr:0.1 ~upper:11.0 () in
   let scale = GRange.scale `HORIZONTAL ~digits:2 ~adjustment:adj ~packing:h#add () in
   ignore (adj#connect#value_changed ~callback:(fun () -> plot#set_update_time adj#value));
   plot#set_update_time adj#value;
   tooltips#set_tip scale#coerce ~text:"Update time (s)";
 
   (* Size slider *)
-  let adj = GData.adjustment ~lower:10. ~value:(float !size) ~step_incr:10. ~upper:1010. () in
+  let adj = GData.adjustment ~lower:10. ~value:(float plot#get_size) ~step_incr:10. ~upper:1010. () in
   let scale = GRange.scale `HORIZONTAL ~digits:0 ~adjustment:adj ~packing:h#add () in
   ignore (adj#connect#value_changed ~callback:(fun () -> plot#set_size (truncate adj#value)));
   tooltips#set_tip scale#coerce ~text:"Memory size";
@@ -513,7 +517,28 @@ let rec plot_window = fun window ->
     let factor =  Ocaml_tools.affine_transform factor#text in
     try
       let name = data#data in
-      add_curve ~factor name
+      let (sender, class_name, msg_name, field_descr, (a',b')) = parse_dnd name in
+      (* test if several curves need to be added with x[min-max] format *)
+      if Str.string_match (Str.regexp "\\([^\\.]+\\)\\[\\([0-9]+\\)-\\([0-9]+\\)\\]") field_descr 0 then
+        begin
+          (* get name and range in correct order *)
+          let field_name = Str.matched_group 1 field_descr
+          and min_range = int_of_string (Str.matched_group 2 field_descr)
+          and max_range = int_of_string (Str.matched_group 3 field_descr) in
+          let min_range, max_range = if min_range > max_range then
+            max_range, min_range
+          else
+            min_range, max_range
+          in
+          (* add all curves *)
+          for i = min_range to max_range do
+            let offset = if a' <> 0. then sprintf "+%.2f" b' else "" in
+            let name = (sprintf "%s:%s:%s:%s[%d]:%f%s" sender class_name msg_name field_name i a' offset) in
+            add_curve ~factor name
+          done
+        end
+      else
+        add_curve ~factor name
     with
       exc -> prerr_endline (Printexc.to_string exc)
     in
@@ -561,6 +586,9 @@ let _ =
       "-u", Arg.Set_float update_time, (Printf.sprintf "<time>  Update time in s (default %.2f)" !update_time)]
     (fun x -> prerr_endline ("WARNING: don't do anything with "^x))
     "Usage: ";
+
+  (** reset initial size and update time in case they are passed as argument of the plotter *)
+  init := List.map (fun w -> {w with size= !size; update= !update_time}) !init;
 
   (** Connect to the Ivy bus *)
   Ivy.init "Paparazzi plotter" "READY" (fun _ _ -> ());

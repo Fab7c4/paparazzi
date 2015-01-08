@@ -30,15 +30,34 @@
 #ifndef STABILIZATION_ATTITUDE_FLOAT_REF_QUAT_FLOAT_H
 #define STABILIZATION_ATTITUDE_FLOAT_REF_QUAT_FLOAT_H
 
-#include "subsystems/radio_control.h"
-#include "math/pprz_algebra_float.h"
-
 #include "stabilization_attitude_ref_float.h"
 
-#define DEADBAND_EXCEEDED(VARIABLE, VALUE) ((VARIABLE > VALUE) || (VARIABLE < -VALUE))
-#define APPLY_DEADBAND(VARIABLE, VALUE) (DEADBAND_EXCEEDED(VARIABLE, VALUE) ? VARIABLE : 0.0)
+#ifndef STABILIZATION_ATTITUDE_GAIN_NB
+#define STABILIZATION_ATTITUDE_GAIN_NB 1
+#endif
+
+#ifndef STABILIZATION_ATTITUDE_GAIN_IDX_DEFAULT
+#define STABILIZATION_ATTITUDE_GAIN_IDX_DEFAULT 0
+#endif
 
 void stabilization_attitude_ref_enter(void);
 void stabilization_attitude_ref_schedule(uint8_t idx);
+
+extern void stabilization_attitude_ref_idx_set_omega_p(uint8_t idx, float omega);
+extern void stabilization_attitude_ref_idx_set_omega_q(uint8_t idx, float omega);
+extern void stabilization_attitude_ref_idx_set_omega_r(uint8_t idx, float omega);
+extern void stabilization_attitude_ref_set_omega_p(float omega);
+extern void stabilization_attitude_ref_set_omega_q(float omega);
+extern void stabilization_attitude_ref_set_omega_r(float omega);
+
+#define stabilization_attitude_ref_quat_float_SetOmegaP(_val) { \
+    stabilization_attitude_ref_set_omega_p(_val);               \
+  }
+#define stabilization_attitude_ref_quat_float_SetOmegaQ(_val) { \
+    stabilization_attitude_ref_set_omega_q(_val);               \
+  }
+#define stabilization_attitude_ref_quat_float_SetOmegaR(_val) { \
+    stabilization_attitude_ref_set_omega_r(_val);               \
+  }
 
 #endif /* STABILIZATION_ATTITUDE_FLOAT_REF_QUAT_FLOAT_H */

@@ -19,42 +19,55 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#include "nps_autopilot_rotorcraft.h"
+#include "nps_autopilot.h"
 
 #include "firmwares/rotorcraft/main.h"
 #include "nps_sensors.h"
 #include "nps_radio_control.h"
+#include "nps_electrical.h"
+#include "nps_fdm.h"
+
 #include "subsystems/radio_control.h"
 #include "subsystems/imu.h"
-#include "subsystems/sensors/baro.h"
-#include "baro_board.h"
-#include "subsystems/electrical.h"
 #include "mcu_periph/sys_time.h"
 #include "state.h"
+#include "subsystems/ahrs.h"
+#include "subsystems/ins.h"
+#include "math/pprz_algebra.h"
 
 #include "subsystems/actuators/motor_mixing.h"
 
+#include "subsystems/abi.h"
+
+#include "messages.h"
+#include "subsystems/datalink/downlink.h"
 
 struct NpsAutopilot autopilot;
 bool_t nps_bypass_ahrs;
+bool_t nps_bypass_ins;
 
 #ifndef NPS_BYPASS_AHRS
 #define NPS_BYPASS_AHRS FALSE
 #endif
 
+#ifndef NPS_BYPASS_INS
+#define NPS_BYPASS_INS FALSE
+#endif
+
+#if NPS_COMMANDS_NB != MOTOR_MIXING_NB_MOTOR
+#error "NPS_COMMANDS_NB does not match MOTOR_MIXING_NB_MOTOR!"
+#endif
 
 void nps_autopilot_init(enum NpsRadioControlType type_rc, int num_rc_script, char* rc_dev) {
+  autopilot.launch = TRUE;
 
   nps_radio_control_init(type_rc, num_rc_script, rc_dev);
+  nps_electrical_init();
+
   nps_bypass_ahrs = NPS_BYPASS_AHRS;
+  nps_bypass_ins = NPS_BYPASS_INS;
 
   main_init();
-
-#ifdef MAX_BAT_LEVEL
-  electrical.vsupply = MAX_BAT_LEVEL * 10;
-#else
-  electrical.vsupply = 111;
-#endif
 
 }
 
@@ -65,7 +78,9 @@ void nps_autopilot_run_systime_step( void ) {
 #include <stdio.h>
 #include "subsystems/gps.h"
 
-void nps_autopilot_run_step(double time __attribute__ ((unused))) {
+void nps_autopilot_run_step(double time) {
+
+  nps_electrical_run_step(time);
 
 #ifdef RADIO_CONTROL_TYPE_PPM
   if (nps_radio_control_available(time)) {
@@ -82,12 +97,25 @@ void nps_autopilot_run_step(double time __attribute__ ((unused))) {
   if (nps_sensors_mag_available()) {
     imu_feed_mag();
     main_event();
- }
+  }
 
   if (nps_sensors_baro_available()) {
-    baro_feed_value(sensors.baro.value);
+    float pressure = (float) sensors.baro.value;
+    AbiSendMsgBARO_ABS(BARO_SIM_SENDER_ID, &pressure);
     main_event();
   }
+
+#if USE_SONAR
+  if (nps_sensors_sonar_available()) {
+    float dist = (float) sensors.sonar.value;
+    AbiSendMsgAGL(AGL_SONAR_NPS_ID, &dist);
+
+    uint16_t foo = 0;
+    DOWNLINK_SEND_SONAR(DefaultChannel, DefaultDevice, &foo, &dist);
+
+    main_event();
+  }
+#endif
 
   if (nps_sensors_gps_available()) {
     gps_feed_value();
@@ -98,26 +126,43 @@ void nps_autopilot_run_step(double time __attribute__ ((unused))) {
     sim_overwrite_ahrs();
   }
 
+  if (nps_bypass_ins) {
+    sim_overwrite_ins();
+  }
+
   handle_periodic_tasks();
 
   /* scale final motor commands to 0-1 for feeding the fdm */
-  /* FIXME: autopilot.commands is of length NB_COMMANDS instead of number of motors */
-  for (uint8_t i=0; i<MOTOR_MIXING_NB_MOTOR; i++)
+  for (uint8_t i=0; i < NPS_COMMANDS_NB; i++)
     autopilot.commands[i] = (double)motor_mixing.commands[i]/MAX_PPRZ;
 
 }
 
-#include "nps_fdm.h"
-#include "subsystems/ahrs.h"
-#include "math/pprz_algebra.h"
+
 void sim_overwrite_ahrs(void) {
 
-  struct Int32Quat quat;
-  QUAT_BFP_OF_REAL(quat, fdm.ltp_to_body_quat);
-  stateSetNedToBodyQuat_i(&quat);
+  struct FloatQuat quat_f;
+  QUAT_COPY(quat_f, fdm.ltp_to_body_quat);
+  stateSetNedToBodyQuat_f(&quat_f);
 
-  struct Int32Rates rates;
-  RATES_BFP_OF_REAL(rates, fdm.body_ecef_rotvel);
-  stateSetBodyRates_i(&rates);
+  struct FloatRates rates_f;
+  RATES_COPY(rates_f, fdm.body_ecef_rotvel);
+  stateSetBodyRates_f(&rates_f);
+
+}
+
+void sim_overwrite_ins(void) {
+
+  struct NedCoor_f ltp_pos;
+  VECT3_COPY(ltp_pos, fdm.ltpprz_pos);
+  stateSetPositionNed_f(&ltp_pos);
+
+  struct NedCoor_f ltp_speed;
+  VECT3_COPY(ltp_speed, fdm.ltpprz_ecef_vel);
+  stateSetSpeedNed_f(&ltp_speed);
+
+  struct NedCoor_f ltp_accel;
+  VECT3_COPY(ltp_accel, fdm.ltpprz_ecef_accel);
+  stateSetAccelNed_f(&ltp_accel);
 
 }

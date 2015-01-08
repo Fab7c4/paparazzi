@@ -34,7 +34,7 @@ let conf_xml = Xml.parse_file (conf_dir // "conf.xml")
 
 let one_ac = fun (notebook:GPack.notebook) ac_name ->
   (* Get the setting file *)
-  let xml_file = Env.paparazzi_home // "var" // ac_name // "settings.xml" in
+  let xml_file = Env.paparazzi_home // "var" // "aircrafts" // ac_name // "settings.xml" in
   if not (Sys.file_exists xml_file) then
     Printf.fprintf stderr "A/C '%s' not compiled: %s not found\n%!" ac_name xml_file
   else
@@ -59,7 +59,7 @@ let one_ac = fun (notebook:GPack.notebook) ac_name ->
 
     (* Bind to values updates *)
     let get_dl_value = fun _sender vs ->
-      settings#set (Pprz.int_assoc "index" vs) (Pprz.float_assoc "value" vs)
+      settings#set (Pprz.int_assoc "index" vs) (Some (string_of_float (Pprz.float_assoc "value" vs)))
     in
     ignore (Tele_Pprz.message_bind "DL_VALUE" get_dl_value);
 
@@ -80,11 +80,20 @@ let _ =
 
   let ivy_bus = ref Defivybus.default_ivy_bus in
   let acs = ref [] in
-  Arg.parse
+
+  let anon_fun = (fun x -> prerr_endline ("WARNING: don't do anything with "^x)) in
+  let speclist =
     [ "-b", Arg.String (fun x -> ivy_bus := x), (sprintf "<ivy bus> Default is %s" !ivy_bus);
       "-ac",  Arg.String (fun x -> acs := x :: !acs), "A/C name"]
-    (fun x -> prerr_endline ("WARNING: don't do anything with "^x))
-    "Usage: ";
+  and usage_msg = "Usage: " in
+
+  Arg.parse speclist anon_fun usage_msg;
+
+  if List.length !acs = 0 then begin
+    prerr_endline "Error: Specify at least one Aircraft for which to display the settings!";
+    Arg.usage speclist usage_msg;
+    exit 1
+  end;
 
   (** Connect to the Ivy bus *)
   Ivy.init "Paparazzi settings" "READY" (fun _ _ -> ());

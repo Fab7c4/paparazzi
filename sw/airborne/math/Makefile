@@ -4,18 +4,19 @@
 # Quiet compilation
 Q=@
 
+PAPARAZZI_SRC ?= ../../..
+
 CC= gcc
 CFLAGS= -fpic
 INCLUDES= -I$(PAPARAZZI_SRC)/sw/include -I$(PAPARAZZI_SRC)/sw/airborne
 
-# build in ../../../var/build/math
-ifndef BUILDDIR
-BUILDDIR=../../../var/build/math
-endif
+PAPARAZZI_HOME ?= $(PAPARAZZI_SRC)
 
-ifndef PREFIX
-PREFIX=/usr
-endif
+# build in $(PAPARAZZI_HOME)/var/build/math
+BUILDDIR ?= $(PAPARAZZI_HOME)/var/build/math
+
+PREFIX ?= /usr/local
+
 LIB_INSTALLDIR=${PREFIX}/lib
 INCLUDE_INSTALLDIR=${PREFIX}/include/pprz
 PKGCONFIG_INSTALLDIR=${PREFIX}/lib/pkgconfig
@@ -30,7 +31,8 @@ all:
 	@cat README
 
 shared_lib: $(OBJ)
-	$(CC) -shared -o $(BUILDDIR)/$(LIBNAME).so $(OBJ)
+	@echo CREATE shared $(LIBNAME)
+	$(Q)$(CC) -shared -o $(BUILDDIR)/$(LIBNAME).so $(OBJ) -lm
 
 install_shared_lib: shared_lib
 	test -d $(LIB_INSTALLDIR) || mkdir -p $(LIB_INSTALLDIR)
@@ -42,9 +44,10 @@ install_shared_lib: shared_lib
 	sed -e 's#PREFIX#$(PREFIX)#g' $(PKGCONFIG_FILE).in > $(PKGCONFIG_INSTALLDIR)/$(PKGCONFIG_FILE)
 
 $(BUILDDIR)/%.o: %.c
-	test -d $(BUILDDIR) || mkdir -p $(BUILDDIR)
-	$(CC) -c $< $(CFLAGS) $(INCLUDES) -o $@
+	$(Q)test -d $(BUILDDIR) || mkdir -p $(BUILDDIR)
+	$(Q)$(CC) -c $< $(CFLAGS) $(INCLUDES) -o $@
 
 clean:
 	$(Q)rm -f $(BUILDDIR)/*.o $(BUILDDIR)/$(LIBNAME).so
 
+.PHONY: all clean shared_lib install_shared_lib

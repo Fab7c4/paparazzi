@@ -48,14 +48,6 @@ let remove_same_t = fun l ->
     | l -> l in
   loop 0 l
 
-let rec remove_older t0 = function
-    (t,_)::l when t < t0 -> remove_older t0 l
-  | l -> l
-
-let rec remove_newer t0 = function
-    (t,v)::l when t <= t0 -> (t,v)::remove_newer t0 l
-  | l -> []
-
 let compute_ticks = fun min_y max_y ->
   let delta = max_y -. min_y in
 
@@ -303,7 +295,7 @@ class plot = fun ~width ~height ~packing () ->
       let renderer = fig_renderer (self#da_renderer ())#size in
       self#recompute ~renderer ()
 
-    method recompute = fun ?(renderer=self#da_renderer ()) () ->
+    method recompute = fun ?(renderer=self#da_renderer ()) ?(low_res=false) () ->
       let (width, height) = renderer#size in
       renderer#init ();
 
@@ -330,12 +322,11 @@ class plot = fun ~width ~height ~packing () ->
       (* Curves *)
       let title_y = ref margin in
       Hashtbl.iter (fun title curve ->
-	let points = Array.to_list (Array.map (fun (t, v) -> (scale_x t, scale_y v)) curve.values) in
-	(* let points = remove_same_t points in *)
-	let points = remove_older (scale_x min_x) points in
-	let points = remove_newer (scale_x max_x) points in
+        let step = if low_res then 10 else 1 in
+        let points = ref [] in
+        Array.iteri (fun i (t, v) -> if t > min_x && t <= max_x && (i mod step = 0) then points := List.rev_append [(scale_x t, scale_y v)] !points) curve.values;
 	renderer#set_color curve.color;
-	renderer#lines points;
+	renderer#lines !points;
 
 	(* Title *)
 	let (w, h) = renderer#create_text title in
@@ -410,7 +401,7 @@ class plot = fun ~width ~height ~packing () ->
       max_x <- max_x +. dx;
       min_y <- min_y +. dy;
       max_y <- max_y +. dy;
-      self#recompute ()
+      self#recompute ~low_res:true ()
 
     method button_press = fun ev ->
       pressed_button <- Some (GdkEvent.Button.button ev);
@@ -432,7 +423,7 @@ class plot = fun ~width ~height ~packing () ->
 	Some 1 ->
 	  motion_x <- x;
 	  motion_y <- y;
-	  self#recompute ();
+	  self#recompute ~low_res:true ();
 	  true
       |	Some 2 -> (* middle button, scroll *)
 	  self#scroll (truncate (press_x-.x)) (truncate (y-.press_y));
@@ -461,6 +452,8 @@ class plot = fun ~width ~height ~packing () ->
 		self#recompute ()
 	      end;
 	  true
+      | 2 -> self#recompute (); (* recompute at full resolution after a scroll *)
+          true
       | _ -> false
 
     method zoom = fun ev ->
@@ -518,7 +511,9 @@ let pprz_float = function
     Pprz.Int i -> float i
   | Pprz.Float f -> f
   | Pprz.Int32 i -> Int32.to_float i
+  | Pprz.Int64 i -> Int64.to_float i
   | Pprz.String s -> float_of_string s
+  | Pprz.Char c -> float_of_string (String.make 1 c)
   | Pprz.Array _ -> 0.
 
 
@@ -673,7 +668,9 @@ let load_log = fun ?export ?factor (plot:plot) (menubar:GMenu.menu_shell GMenu.f
   let class_name =
     try
       let name = "telemetry_ap" in
-      let _ = ExtXml.child protocol ~select:(fun x -> Xml.attrib x "name" = name) "class" in
+      let _ = begin try ExtXml.child protocol ~select:(fun x -> Xml.attrib x "name" = name) "msg_class"
+        with Not_found -> ExtXml.child protocol ~select:(fun x -> Xml.attrib x "name" = name) "class"
+      end in
       name
     with _ -> "telemetry" in
 
@@ -804,7 +801,7 @@ let rec plot_window = fun ?export init ->
   let oid = plotter#get_oid in
   Hashtbl.add windows oid ();
 
-  plotter#set_icon (Some (GdkPixbuf.from_file Env.icon_file));
+  plotter#set_icon (Some (GdkPixbuf.from_file Env.icon_log_file));
   let vbox = GPack.vbox ~packing:plotter#add () in
   let quit = fun () -> GMain.Main.quit (); exit 0 in
   let close = fun () ->

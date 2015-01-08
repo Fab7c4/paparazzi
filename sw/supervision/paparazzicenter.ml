@@ -173,7 +173,8 @@ let () =
 
   if Sys.file_exists Utils.backup_xml_file then begin
     let rec question_box = fun () ->
-      match GToolbox.question_box ~title:"Backup" ~buttons:["Keep changes"; "Discard changes"; "View changes"] ~default:2 "Configuration changes made during the last session were not saved. ?" with
+      let message = "Configuration changes to conf/conf.xml were not saved during the last session.\nYou can either keep the current version or restore the auto-saved backup from the last session to discard the changes.\nIf you made any manual changes to conf/conf.xml and choose [Restore auto-backup] you will lose these." in
+      match GToolbox.question_box ~title:"Backup" ~buttons:["Keep current"; "Restore auto-backup"; "View changes"] ~default:2 message with
       | 2 -> Sys.rename Utils.backup_xml_file Utils.conf_xml_file
       | 3 -> ignore (Sys.command (sprintf "meld %s %s" Utils.backup_xml_file Utils.conf_xml_file)); question_box ()
       | _ -> Sys.remove Utils.backup_xml_file in
@@ -183,13 +184,13 @@ let () =
   Utils.build_aircrafts ();
 
   let ac_combo = AC.parse_conf_xml gui#vbox_ac
-  and target_combo = Gtk_tools.combo ["sim";"fbw";"ap"] gui#vbox_target in
+  and target_combo = Gtk_tools.combo ["sim";"fbw";"ap"] gui#vbox_target
+  and flash_combo = Gtk_tools.combo ["Default mode"] gui#vbox_flash in
 
   (Gtk_tools.combo_widget target_combo)#misc#set_sensitive false;
+  (Gtk_tools.combo_widget flash_combo)#misc#set_sensitive false;
   gui#button_clean#misc#set_sensitive false;
   gui#button_build#misc#set_sensitive false;
-
-  AC.ac_combo_handler gui ac_combo target_combo;
 
   (* Change the buffer of the text view to attach a tag_table *)
   let background_tags =
@@ -197,16 +198,17 @@ let () =
       let tag = GText.tag ~name:color () in
       tag#set_property (`BACKGROUND color);
       (color, tag))
-      ["red"; "green"; "orange"; "cyan"] in
+      (* since tcl8.6 "green" refers to "darkgreen" and the former "green" is now "lime", but that is not available in older versions, so hardcode the color to #00ff00*)
+      ["red"; "#00ff00"; "orange"; "cyan"] in
   let tag_table = GText.tag_table () in
   List.iter (fun (_color, tag) -> tag_table#add tag#as_tag) background_tags;
   let buffer = GText.buffer ~tag_table () in
   gui#console#set_buffer buffer;
 
-  let errors = "red", ["error"; "no such file"; "undefined reference"; "failure"; "multiple definition"]
+  let errors = "red", ["error:"; "error "; "no such file"; "undefined reference"; "failure"; "multiple definition"]
   and warnings = "orange", ["warning"]
-  and info = "green", ["pragma message"]
-  and version = "cyan", ["paparazzi version"] in
+  and info = "#00ff00", ["pragma message"]
+  and version = "cyan", ["paparazzi version"; "build aircraft"] in
 
   let color_regexps =
     List.map (fun (color, strings) ->
@@ -234,7 +236,9 @@ let () =
     let end_mark = gui#console#buffer#create_mark end_iter in
     gui#console#scroll_mark_onscreen (`MARK end_mark) in
 
-  AC.build_handler ~file gui ac_combo target_combo log;
+  AC.ac_combo_handler gui ac_combo target_combo flash_combo log;
+
+  AC.build_handler ~file gui ac_combo target_combo flash_combo log;
 
   let session_combo, execute_session = CP.supervision ~file gui log ac_combo target_combo in
 
@@ -256,6 +260,11 @@ let () =
   let callback = fun () ->
     ignore (GToolbox.message_box ~title:"About Paparazzi Center" ~icon:(GMisc.image ~pixbuf:paparazzi_pixbuf ())#coerce "Copyright (C) 2007-2008 ENAC, Pascal Brisset\nhttp://paparazzi.enac.fr") in
   ignore (gui#menu_item_about#connect#activate ~callback);
+
+  (* Help/Get Help menu entry *)
+  let callback = fun () ->
+    ignore (GToolbox.message_box ~title:"Getting Help with Paparazzi" ~icon:(GMisc.image ~pixbuf:paparazzi_pixbuf ())#coerce "The primary documentation for Paparazzi is on the wiki:\nhttp://paparazzi.enac.fr\n\nCommunity-based support is through the paparazzi-devel mailing list:\nhttp://paparazzi.enac.fr/wiki/Contact\n\nThe Paparazzi auto-generated developer documentation is found on GitHub:\nhttp://paparazzi.github.io/docs/\n\nThe Paparazzi sourcecode can be found on GitHub:\nhttps://github.com/paparazzi/paparazzi\n\nIf you think you have found a bug or would like to make a feature request, feel\nfree to visit the Issues page found on GitHub (link found on the above webpage).") in
+  ignore (gui#menu_item_get_help#connect#activate ~callback);
 
   (* Read preferences *)
   if Sys.file_exists Env.gconf_file then begin

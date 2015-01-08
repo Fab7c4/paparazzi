@@ -38,20 +38,28 @@ struct AhrsFloatCmpl {
   struct FloatRates imu_rate;
   struct FloatQuat ltp_to_imu_quat;
   struct FloatRMat ltp_to_imu_rmat;
-  /* for gravity correction during coordinated turns */
-  float ltp_vel_norm;
+
+  bool_t correct_gravity; ///< enable gravity correction during coordinated turns
+  float ltp_vel_norm; ///< velocity norm for gravity correction during coordinated turns
   bool_t ltp_vel_norm_valid;
-  bool_t correct_gravity;
+
+  float accel_omega;  ///< filter cut-off frequency for correcting the attitude from accels (pseudo-gravity measurement)
+  float accel_zeta;   ///< filter damping for correcting the gyro-bias from accels (pseudo-gravity measurement)
+  float mag_omega;    ///< filter cut-off frequency for correcting the attitude (heading) from magnetometer
+  float mag_zeta;     ///< filter damping for correcting the gyro bias from magnetometer
+
+  /** sets how strongly the gravity heuristic reduces accel correction.
+   * Set to zero in order to disable gravity heuristic.
+   */
+  uint8_t gravity_heuristic_factor;
+  float weight;
 
   bool_t heading_aligned;
+  struct FloatVect3 mag_h;
 
-  /*
-     Holds float version of IMU alignement
-     in order to be able to run against the fixed point
-     version of the IMU
-  */
-  struct FloatQuat body_to_imu_quat;
-  struct FloatRMat body_to_imu_rmat;
+  /* internal counters for the gains */
+  uint16_t accel_cnt; ///< number of propagations since last accel update
+  uint16_t mag_cnt;   ///< number of propagations since last mag update
 };
 
 extern struct AhrsFloatCmpl ahrs_impl;
@@ -69,11 +77,6 @@ void ahrs_update_heading(float heading);
  * @param heading Heading in body frame, radians (CW/north)
  */
 void ahrs_realign_heading(float heading);
-
-#ifdef AHRS_UPDATE_FW_ESTIMATOR
-extern float ins_roll_neutral;
-extern float ins_pitch_neutral;
-#endif
 
 
 #endif /* AHRS_FLOAT_CMPL_RMAT */

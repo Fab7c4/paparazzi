@@ -57,7 +57,7 @@
 /* ADC */
 
 #define ADC_0 AdcBank1(5)
-#ifdef USE_ADC_0
+#if USE_ADC_0
 #ifndef USE_AD1
 #define USE_AD1
 #endif
@@ -65,7 +65,7 @@
 #endif
 
 #define ADC_1 AdcBank1(4)
-#ifdef USE_ADC_1
+#if USE_ADC_1
 #ifndef USE_AD1
 #define USE_AD1
 #endif
@@ -73,7 +73,7 @@
 #endif
 
 #define ADC_2 AdcBank1(3)
-#ifdef USE_ADC_2
+#if USE_ADC_2
 #ifndef USE_AD1
 #define USE_AD1
 #endif
@@ -81,7 +81,7 @@
 #endif
 
 #define ADC_3 AdcBank1(2)
-#ifdef USE_ADC_3
+#if USE_ADC_3
 #ifndef USE_AD1
 #define USE_AD1
 #endif
@@ -114,6 +114,10 @@
 #define SPI1_DRDY_EINT         0
 #define SPI1_DRDY_VIC_IT       VIC_EINT0
 
-#define BOARD_HAS_BARO 1
+
+/* by default enable onboard baro */
+#ifndef USE_BARO_BOARD
+#define USE_BARO_BOARD 1
+#endif
 
 #endif /* CONFIG_UMARIM_V1_0_H */

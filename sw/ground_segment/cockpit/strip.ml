@@ -33,7 +33,7 @@ type t =
   connect_shift_lateral : (float -> unit) -> unit;
   connect_launch : (float -> unit) -> unit;
   connect_kill : (float -> unit) -> unit;
-  connect_mode : (float -> unit) -> unit;
+  connect_mode : float -> (float -> unit) -> unit;
   connect_mark : (unit -> unit) -> unit;
   connect_flight_time : (float -> unit) -> unit;
   connect_apt : (unit -> float) -> (float -> unit) -> unit;
@@ -101,8 +101,8 @@ object (self)
     (gauge_da#misc#set_size_request ~width () : unit)
 end
 
-
-class vgauge = fun ?(color="green") ?(history_len=50) gauge_da v_min v_max ->
+(* since tcl8.6 "green" refers to "darkgreen" and the former "green" is now "lime", but that is not available in older versions, so hardcode the color to #00ff00 *)
+class vgauge = fun ?(color="#00ff00") ?(history_len=50) gauge_da v_min v_max ->
 object (self)
   inherit gauge gauge_da
   val history = Array.create history_len 0
@@ -172,7 +172,7 @@ object (self)
       (new GDraw.drawable gauge_da#misc#window)#put_pixmap ~x:0 ~y:0 dr#pixmap
 end
 
-class hgauge = fun ?(color="green") gauge_da v_min v_max ->
+class hgauge = fun ?(color="#00ff00") gauge_da v_min v_max ->
 object (self)
   inherit gauge gauge_da
   method set = fun ?(background="orange") value string ->
@@ -378,10 +378,10 @@ object
     connect_buttons callback
       [ strip#button_launch, 1. ]
 
-  method connect_mode = fun callback ->
+  method connect_mode = fun mode callback ->
     let callback = fun _ -> (* Back in AUTO2 *)
       match GToolbox.question_box ~title:"Back to auto" ~buttons:["AUTO"; "Cancel"] (sprintf "Restore AUTO mode for A/C %s ?" ac_name) with
-          1 -> callback 2.; true
+          1 -> callback mode; true
         | _ -> true in
     ignore(strip#eventbox_mode#event#connect#button_press ~callback)
 

@@ -22,6 +22,9 @@
 #ifndef NPS_FDM
 #define NPS_FDM
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "std.h"
 #include "math/pprz_geodetic_double.h"
@@ -43,6 +46,7 @@ struct NpsFdm {
   double init_dt;
   double curr_dt;
   bool_t on_ground;
+  int nan_count;
 
   /*  position */
   struct EcefCoor_d  ecef_pos;
@@ -85,11 +89,18 @@ struct NpsFdm {
   struct DoubleVect3 ltp_g;
   struct DoubleVect3 ltp_h;
 
+  struct DoubleVect3 wind; ///< velocity in m/s in NED
+
 };
 
 extern struct NpsFdm fdm;
 
 extern void nps_fdm_init(double dt);
-extern void nps_fdm_run_step(double* commands);
+extern void nps_fdm_run_step(bool_t launch, double* commands, int commands_nb);
+extern void nps_fdm_set_wind(double speed, double dir, int turbulence_severity);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* NPS_FDM */

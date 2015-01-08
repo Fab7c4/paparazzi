@@ -22,10 +22,9 @@
 import sys
 import os
 from optparse import OptionParser
-import scipy
-from scipy import optimize
 
 import calibration_utils
+
 
 def main():
     usage = "usage: %prog [options] log_filename.data" + "\n" + "Run %prog --help to list the options."
@@ -40,6 +39,7 @@ def main():
                       action="store_true", dest="verbose")
     (options, args) = parser.parse_args()
     options.sensor = "MAG"
+
     if len(args) != 1:
         parser.error("incorrect number of arguments")
     else:
@@ -48,19 +48,15 @@ def main():
         else:
             print(args[0] + " not found")
             sys.exit(1)
+
     ac_ids = calibration_utils.get_ids_in_log(filename)
-    if options.ac_id == None:
+    if options.ac_id is None:
         if len(ac_ids) == 1:
             options.ac_id = ac_ids[0]
         else:
             parser.error("More than one aircraft id found in log file. Specify the id to use.")
     if options.verbose:
         print("Using aircraft id "+options.ac_id)
-
-        sensor_ref = 1.
-        sensor_res = 11
-        noise_window = 10;
-        noise_threshold = 1000;
 
     if not filename.endswith(".data"):
         parser.error("Please specify a *.data log file")
@@ -73,7 +69,7 @@ def main():
         print("Error: found zero IMU_MAG_CURRENT_CALIBRATION measurements for aircraft with id "+options.ac_id+" in log file!")
         sys.exit(1)
     if options.verbose:
-       print("found "+str(len(measurements))+" records")
+        print("found "+str(len(measurements))+" records")
 
     coefficient = calibration_utils.estimate_mag_current_relation(measurements)
 

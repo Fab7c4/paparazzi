@@ -3,8 +3,9 @@
   <modules main_freq="512">
     <load name="servo_switch.xml"/>
     <load name="rotorcraft_cam.xml"/>
-    <load name="sonar_adc_ins.xml">
+    <load name="sonar_adc.xml">
       <configure name="ADC_SONAR" value="ADC_0"/>
+      <define name="USE_SONAR"/>
       <!--define name="SENSOR_SYNC_SEND_SONAR"/-->
     </load>
     <!--load name="baro_mpl3115.xml">
@@ -24,6 +25,7 @@
   </modules>
 
   <firmware name="rotorcraft">
+    <define name="DEBUG_VFF_EXTENDED"/>
     <define name="USE_INS_NAV_INIT"/>
     <!--define name="GUIDANCE_H_USE_REF"/-->
 
@@ -177,20 +179,16 @@
   </section>
 
   <section name="INS" prefix="INS_">
-    <define name="BARO_SENS" value="15." integer="16"/>
-    <!--define name="SONAR_SENS" value="0.00650498" integer="16"/--> <!-- XL-MaxSonar-EZ4 5V supply -->
-    <define name="SONAR_SENS" value="0.016775" integer="16"/> <!-- XL-MaxSonar-EZ4 5V supply scaled to 3.3V -->
     <define name="SONAR_MAX_RANGE" value="5.0"/>
     <define name="SONAR_MIN_RANGE" value="0.25"/>
-    <!--define name="SONAR_VARIANCE_THRESHOLD" value="0.01"/-->
+  </section>
+
+  <section name="SONAR">
+    <!--define name="SONAR_SCALE" value="0.00650498" integer="16"/--> <!-- XL-MaxSonar-EZ4 5V supply -->
+    <define name="SONAR_SCALE" value="0.016775" integer="16"/> <!-- XL-MaxSonar-EZ4 5V supply scaled to 3.3V -->
   </section>
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
-    <define name="MIN_ERR_Z"    value="POS_BFP_OF_REAL(-10.)"/>
-    <define name="MAX_ERR_Z"    value="POS_BFP_OF_REAL( 10.)"/>
-    <define name="MIN_ERR_ZD"   value="SPEED_BFP_OF_REAL(-10.)"/>
-    <define name="MAX_ERR_ZD"   value="SPEED_BFP_OF_REAL( 10.)"/>
-    <define name="MAX_SUM_ERR"  value="2000000"/>
     <define name="REF_MIN_ZDD"  value="-0.8*9.81"/>
     <define name="REF_MAX_ZDD"  value=" 0.5*9.81"/>
     <define name="REF_MIN_ZD"   value="-1.5"/>
@@ -199,9 +197,7 @@
     <define name="HOVER_KD"     value="80"/>
     <define name="HOVER_KI"     value="0"/>
     <!-- 1.5m/s for full stick : SPEED_BFP_OF_REAL(1.5) / (MAX_PPRZ/2) -->
-    <define name="RC_CLIMB_COEF" value ="163"/>
     <!-- SPEED_BFP_OF_REAL(1.5) * 20% -->
-    <define name="RC_CLIMB_DEAD_BAND" value ="160000"/>
   </section>
 
 
@@ -213,7 +209,7 @@
     <define name="IGAIN" value="15"/>
     <define name="NGAIN" value="0"/>
     <!-- feedforward -->
-    <define name="AGAIN" value="100"/>
+    <define name="AGAIN" value="0"/>
   </section>
 
   <section name="BAT">
@@ -231,8 +227,7 @@
   </section>
 
   <section name="CAM" prefix="ROTORCRAFT_CAM_">
-    <define name="ON" value="LED_ON(CAM_SWITCH_LED)"/>
-    <define name="OFF" value="LED_OFF(CAM_SWITCH_LED)"/>
+    <define name="SWITCH_GPIO" value="CAM_SWITCH_GPIO"/>
     <define name="TILT_SERVO" value="CAM"/>
     <define name="TILT_ANGLE_MAX" value="-90." unit="deg"/>
     <define name="TILT_ANGLE_MIN" value=" 10." unit="deg"/>
@@ -260,7 +255,8 @@
 
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES"  value="{&quot;front_motor&quot;, &quot;back_motor&quot;, &quot;right_motor&quot;, &quot;left_motor&quot;}"/>
-    <!--define name="INITIAL_CONDITITONS" value="&quot;reset_enac&quot;"/-->
+    <define name="JSBSIM_MODEL" value="&quot;simple_quad&quot;"/>
+    <!--define name="JSBSIM_INIT" value="&quot;reset_enac&quot;"/-->
     <define name="SENSORS_PARAMS" value="&quot;nps_sensors_params_booz2_a1.h&quot;"/>
   </section>
 

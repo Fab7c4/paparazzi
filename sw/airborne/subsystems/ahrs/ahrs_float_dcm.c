@@ -20,7 +20,6 @@
  * Theory: http://code.google.com/p/gentlenav/downloads/list  file DCMDraft2.pdf
  *
  * Options:
- *  - USE_HIGH_ACCEL_FLAG: no compensation when high accelerations present
  *  - USE_MAGNETOMETER_ONGROUND: use magnetic compensation before takeoff only while GPS course not good
  *  - USE_AHRS_GPS_ACCELERATIONS: forward acceleration compensation from GPS speed
  *
@@ -50,28 +49,10 @@
 
 #if FLOAT_DCM_SEND_DEBUG
 // FIXME Debugging Only
-#ifndef DOWNLINK_DEVICE
-#define DOWNLINK_DEVICE DOWNLINK_AP_DEVICE
-#endif
 #include "mcu_periph/uart.h"
 #include "messages.h"
 #include "subsystems/datalink/downlink.h"
 #endif
-
-#ifndef AHRS_PROPAGATE_FREQUENCY
-#define AHRS_PROPAGATE_FREQUENCY PERIODIC_FREQUENCY
-#endif
-
-// FIXME this is still needed for fixedwing integration
-// remotely settable
-#ifndef INS_ROLL_NEUTRAL_DEFAULT
-#define INS_ROLL_NEUTRAL_DEFAULT 0
-#endif
-#ifndef INS_PITCH_NEUTRAL_DEFAULT
-#define INS_PITCH_NEUTRAL_DEFAULT 0
-#endif
-float ins_roll_neutral = INS_ROLL_NEUTRAL_DEFAULT;
-float ins_pitch_neutral = INS_PITCH_NEUTRAL_DEFAULT;
 
 
 struct AhrsFloatDCM ahrs_impl;
@@ -80,9 +61,6 @@ struct AhrsFloatDCM ahrs_impl;
 // Positive pitch : nose up
 // Positive roll : right wing down
 // Positive yaw : clockwise
-
-// DCM Working variables
-const float G_Dt = 1. / ((float) AHRS_PROPAGATE_FREQUENCY );
 
 struct FloatVect3 accel_float = {0,0,0};
 
@@ -106,24 +84,12 @@ static inline void set_dcm_matrix_from_rmat(struct FloatRMat *rmat);
 
 void Normalize(void);
 void Drift_correction(void);
-void Matrix_update(void);
+void Matrix_update(float dt);
 
 #if PERFORMANCE_REPORTING == 1
 int renorm_sqrt_count = 0;
 int renorm_blowup_count = 0;
 float imu_health = 0.;
-#endif
-
-#if USE_HIGH_ACCEL_FLAG
-// High Accel Flag
-#define HIGH_ACCEL_LOW_SPEED 15.0
-#define HIGH_ACCEL_LOW_SPEED_RESUME 4.0 // Hysteresis
-#define HIGH_ACCEL_HIGH_THRUST (0.8*MAX_PPRZ)
-#define HIGH_ACCEL_HIGH_THRUST_RESUME (0.1*MAX_PPRZ) // Hysteresis
-bool_t high_accel_done;
-bool_t high_accel_flag;
-// Command vector for thrust (fixed_wing)
-#include "inter_mcu.h"
 #endif
 
 
@@ -140,25 +106,14 @@ static inline void set_dcm_matrix_from_rmat(struct FloatRMat *rmat)
 void ahrs_init(void) {
   ahrs.status = AHRS_UNINIT;
 
-  /*
-   * Initialises our IMU alignement variables
-   * This should probably done in the IMU code instead
-   */
-  struct FloatEulers body_to_imu_euler =
-    {IMU_BODY_TO_IMU_PHI, IMU_BODY_TO_IMU_THETA, IMU_BODY_TO_IMU_PSI};
-  FLOAT_RMAT_OF_EULERS(ahrs_impl.body_to_imu_rmat, body_to_imu_euler);
-
-  EULERS_COPY(ahrs_impl.ltp_to_imu_euler, body_to_imu_euler);
+  /* Set ltp_to_imu so that body is zero */
+  memcpy(&ahrs_impl.ltp_to_imu_euler, orientationGetEulers_f(&imu.body_to_imu),
+         sizeof(struct FloatEulers));
 
   FLOAT_RATES_ZERO(ahrs_impl.imu_rate);
 
   /* set inital filter dcm */
-  set_dcm_matrix_from_rmat(&ahrs_impl.body_to_imu_rmat);
-
-#if USE_HIGH_ACCEL_FLAG
-  high_accel_done = FALSE;
-  high_accel_flag = FALSE;
-#endif
+  set_dcm_matrix_from_rmat(orientationGetRMat_f(&imu.body_to_imu));
 
   ahrs_impl.gps_speed = 0;
   ahrs_impl.gps_acceleration = 0;
@@ -174,7 +129,7 @@ void ahrs_align(void)
 
   /* Convert initial orientation in quaternion and rotation matrice representations. */
   struct FloatRMat ltp_to_imu_rmat;
-  FLOAT_RMAT_OF_EULERS(ltp_to_imu_rmat, ahrs_impl.ltp_to_imu_euler);
+  float_rmat_of_eulers(&ltp_to_imu_rmat, &ahrs_impl.ltp_to_imu_euler);
 
   /* set filter dcm */
   set_dcm_matrix_from_rmat(&ltp_to_imu_rmat);
@@ -191,7 +146,7 @@ void ahrs_align(void)
 }
 
 
-void ahrs_propagate(void)
+void ahrs_propagate(float dt)
 {
   /* convert imu data to floating point */
   struct FloatRates gyro_float;
@@ -215,7 +170,7 @@ void ahrs_propagate(void)
   ahrs_impl.imu_rate.r += dr;
 #endif
 
-  Matrix_update();
+  Matrix_update(dt);
 
   Normalize();
 
@@ -231,7 +186,7 @@ void ahrs_update_gps(void)
     ahrs_impl.gps_age = 0;
     ahrs_impl.gps_speed = gps.speed_3d/100.;
 
-    if(gps.gspeed >= 500) { //got a 3d fix and ground speed is more than 0.5 m/s
+    if(gps.gspeed >= 500) { //got a 3d fix and ground speed is more than 5.0 m/s
       ahrs_impl.gps_course = ((float)gps.course)/1.e7;
       ahrs_impl.gps_course_valid = TRUE;
     } else {
@@ -247,7 +202,7 @@ void ahrs_update_gps(void)
 }
 
 
-void ahrs_update_accel(void)
+void ahrs_update_accel(float dt __attribute__((unused)))
 {
   ACCELS_FLOAT_OF_BFP(accel_float, imu.accel);
 
@@ -278,7 +233,7 @@ PRINT_CONFIG_MSG("AHRS_FLOAT_DCM uses GPS acceleration.")
 }
 
 
-void ahrs_update_mag(void)
+void ahrs_update_mag(float dt __attribute__((unused)))
 {
 #if USE_MAGNETOMETER
 #warning MAGNETOMETER FEEDBACK NOT TESTED YET
@@ -408,7 +363,7 @@ void Normalize(void)
 
   // Reset on trouble
   if (problem) {                // Our solution is blowing up and we will force back to initial condition.  Hope we are not upside down!
-    set_dcm_matrix_from_rmat(&ahrs_impl.body_to_imu_rmat);
+    set_dcm_matrix_from_rmat(orientationGetRMat_f(&imu.body_to_imu));
     problem = FALSE;
   }
 }
@@ -436,25 +391,6 @@ void Drift_correction(void)
   // Dynamic weighting of accelerometer info (reliability filter)
   // Weight for accelerometer info (<0.5G = 0.0, 1G = 1.0 , >1.5G = 0.0)
   Accel_weight = Chop(1 - 2*fabs(1 - Accel_magnitude),0,1);  //
-
-#if USE_HIGH_ACCEL_FLAG
-  // Test for high acceleration:
-  //  - low speed
-  //  - high thrust
-  float speed = *stateGetHorizontalSpeedNorm_f();
-  if (speed < HIGH_ACCEL_LOW_SPEED && ap_state->commands[COMMAND_THROTTLE] > HIGH_ACCEL_HIGH_THRUST && !high_accel_done) {
-    high_accel_flag = TRUE;
-  } else {
-    high_accel_flag = FALSE;
-    if (speed > HIGH_ACCEL_LOW_SPEED && !high_accel_done) {
-      high_accel_done = TRUE; // After takeoff, don't use high accel before landing (GS small, Throttle small)
-    }
-    if (speed < HIGH_ACCEL_HIGH_THRUST_RESUME && ap_state->commands[COMMAND_THROTTLE] < HIGH_ACCEL_HIGH_THRUST_RESUME) {
-      high_accel_done = FALSE; // Activate high accel after landing
-    }
-  }
-  if (high_accel_flag) { Accel_weight = 0.; }
-#endif
 
 
   #if PERFORMANCE_REPORTING == 1
@@ -531,30 +467,30 @@ PRINT_CONFIG_MSG("AHRS_FLOAT_DCM uses magnetometer prior to takeoff and GPS duri
 }
 /**************************************************/
 
-void Matrix_update(void)
+void Matrix_update(float dt)
 {
   Vector_Add(&Omega[0], &ahrs_impl.imu_rate.p, &Omega_I[0]);  //adding proportional term
   Vector_Add(&Omega_Vector[0], &Omega[0], &Omega_P[0]); //adding Integrator term
 
  #if OUTPUTMODE==1    // With corrected data (drift correction)
   Update_Matrix[0][0]=0;
-  Update_Matrix[0][1]=-G_Dt*Omega_Vector[2];//-z
-  Update_Matrix[0][2]=G_Dt*Omega_Vector[1];//y
-  Update_Matrix[1][0]=G_Dt*Omega_Vector[2];//z
+  Update_Matrix[0][1]=-dt*Omega_Vector[2];//-z
+  Update_Matrix[0][2]=dt*Omega_Vector[1];//y
+  Update_Matrix[1][0]=dt*Omega_Vector[2];//z
   Update_Matrix[1][1]=0;
-  Update_Matrix[1][2]=-G_Dt*Omega_Vector[0];//-x
-  Update_Matrix[2][0]=-G_Dt*Omega_Vector[1];//-y
-  Update_Matrix[2][1]=G_Dt*Omega_Vector[0];//x
+  Update_Matrix[1][2]=-dt*Omega_Vector[0];//-x
+  Update_Matrix[2][0]=-dt*Omega_Vector[1];//-y
+  Update_Matrix[2][1]=dt*Omega_Vector[0];//x
   Update_Matrix[2][2]=0;
  #else                    // Uncorrected data (no drift correction)
   Update_Matrix[0][0]=0;
-  Update_Matrix[0][1]=-G_Dt*ahrs_impl.imu_rate.r;//-z
-  Update_Matrix[0][2]=G_Dt*ahrs_impl.imu_rate.q;//y
-  Update_Matrix[1][0]=G_Dt*ahrs_impl.imu_rate.r;//z
+  Update_Matrix[0][1]=-dt*ahrs_impl.imu_rate.r;//-z
+  Update_Matrix[0][2]=dt*ahrs_impl.imu_rate.q;//y
+  Update_Matrix[1][0]=dt*ahrs_impl.imu_rate.r;//z
   Update_Matrix[1][1]=0;
-  Update_Matrix[1][2]=-G_Dt*ahrs_impl.imu_rate.p;
-  Update_Matrix[2][0]=-G_Dt*ahrs_impl.imu_rate.q;
-  Update_Matrix[2][1]=G_Dt*ahrs_impl.imu_rate.p;
+  Update_Matrix[1][2]=-dt*ahrs_impl.imu_rate.p;
+  Update_Matrix[2][0]=-dt*ahrs_impl.imu_rate.q;
+  Update_Matrix[2][1]=dt*ahrs_impl.imu_rate.p;
   Update_Matrix[2][2]=0;
  #endif
 
@@ -574,23 +510,17 @@ void Matrix_update(void)
  */
 static inline void set_body_orientation_and_rates(void) {
 
+  struct FloatRMat *body_to_imu_rmat = orientationGetRMat_f(&imu.body_to_imu);
+
   struct FloatRates body_rate;
-  FLOAT_RMAT_TRANSP_RATEMULT(body_rate, ahrs_impl.body_to_imu_rmat, ahrs_impl.imu_rate);
+  float_rmat_transp_ratemult(&body_rate, body_to_imu_rmat, &ahrs_impl.imu_rate);
   stateSetBodyRates_f(&body_rate);
 
   struct FloatRMat ltp_to_imu_rmat, ltp_to_body_rmat;
-  FLOAT_RMAT_OF_EULERS(ltp_to_imu_rmat, ahrs_impl.ltp_to_imu_euler);
-  FLOAT_RMAT_COMP_INV(ltp_to_body_rmat, ltp_to_imu_rmat, ahrs_impl.body_to_imu_rmat);
+  float_rmat_of_eulers(&ltp_to_imu_rmat, &ahrs_impl.ltp_to_imu_euler);
+  float_rmat_comp_inv(&ltp_to_body_rmat, &ltp_to_imu_rmat, body_to_imu_rmat);
 
-  // Some stupid lines of code for neutrals
-  struct FloatEulers ltp_to_body_euler;
-  FLOAT_EULERS_OF_RMAT(ltp_to_body_euler, ltp_to_body_rmat);
-  ltp_to_body_euler.phi -= ins_roll_neutral;
-  ltp_to_body_euler.theta -= ins_pitch_neutral;
-  stateSetNedToBodyEulers_f(&ltp_to_body_euler);
-
-  // should be replaced at the end by:
-  //   stateSetNedToBodyRMat_f(&ltp_to_body_rmat);
+  stateSetNedToBodyRMat_f(&ltp_to_body_rmat);
 
 }
 

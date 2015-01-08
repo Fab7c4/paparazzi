@@ -32,7 +32,6 @@
 #include <inttypes.h>
 #include "std.h"
 #include "paparazzi.h"
-#include "mcu_periph/sys_time.h"
 #include "generated/airframe.h"
 
 
@@ -51,23 +50,24 @@ extern void autopilot_init(void);
 #define  PPRZ_MODE_MANUAL 0
 #define  PPRZ_MODE_AUTO1 1
 #define  PPRZ_MODE_AUTO2 2
-#define  PPRZ_MODE_HOME	3
+#define  PPRZ_MODE_HOME 3
 #define  PPRZ_MODE_GPS_OUT_OF_ORDER 4
 #define  PPRZ_MODE_NB 5
 
 #define PPRZ_MODE_OF_PULSE(pprz) \
   (pprz > THRESHOLD2 ? PPRZ_MODE_AUTO2 : \
-        (pprz > THRESHOLD1 ? PPRZ_MODE_AUTO1 : PPRZ_MODE_MANUAL))
+   (pprz > THRESHOLD1 ? PPRZ_MODE_AUTO1 : PPRZ_MODE_MANUAL))
 
 extern uint8_t pprz_mode;
 extern bool_t kill_throttle;
+extern uint8_t  mcu1_status;
 
 /** flight time in seconds. */
 extern uint16_t autopilot_flight_time;
 
 #define autopilot_ResetFlightTimeAndLaunch(_) { \
-  autopilot_flight_time = 0; launch = FALSE; \
-}
+    autopilot_flight_time = 0; launch = FALSE; \
+  }
 
 
 // FIXME, move to control
@@ -88,8 +88,13 @@ extern uint8_t lateral_mode;
  */
 extern uint16_t vsupply;
 
-/** Fuel consumption (mAh)
- * TODO: move to electrical subsystem
+/** Supply current in milliAmpere.
+ * This the ap copy of the measurement from fbw
+ */
+extern int32_t current; // milliAmpere
+
+/** Energy consumption (mAh)
+ * This is the ap copy of the measurement from fbw
  */
 extern float energy;
 
@@ -100,23 +105,28 @@ extern bool_t gps_lost;
 /** Assignment, returning _old_value != _value
  * Using GCC expression statements */
 #define ModeUpdate(_mode, _value) ({ \
-  uint8_t new_mode = _value; \
-  (_mode != new_mode ? _mode = new_mode, TRUE : FALSE); \
-})
+    uint8_t new_mode = _value; \
+    (_mode != new_mode ? _mode = new_mode, TRUE : FALSE); \
+  })
 
+/** Send mode over telemetry
+ */
+extern void autopilot_send_mode(void);
 
 /** Power switch control.
  */
 extern bool_t power_switch;
 
-#ifdef POWER_SWITCH_LED
+#ifdef POWER_SWITCH_GPIO
+#include "mcu_periph/gpio.h"
 #define autopilot_SetPowerSwitch(_x) { \
-  power_switch = _x; \
-  if (_x) LED_ON(POWER_SWITCH_LED) else LED_OFF(POWER_SWITCH_LED); \
-}
-#else // POWER_SWITCH_LED
+    power_switch = _x; \
+    if (_x) { gpio_set(POWER_SWITCH_GPIO); } \
+    else { gpio_clear(POWER_SWITCH_GPIO); } \
+  }
+#else // POWER_SWITCH_GPIO
 #define autopilot_SetPowerSwitch(_x) { power_switch = _x; }
-#endif // POWER_SWITCH_LED
+#endif // POWER_SWITCH_GPIO
 
 
 /* CONTROL_RATE will be removed in the next release
@@ -133,6 +143,21 @@ extern bool_t power_switch;
 
 #ifndef NAVIGATION_FREQUENCY
 #define NAVIGATION_FREQUENCY 4
+#endif
+
+#include "subsystems/settings.h"
+
+static inline void autopilot_StoreSettings(float store)
+{
+  if (kill_throttle && store) {
+    settings_store_flag = store;
+    settings_store();
+  }
+}
+
+#if DOWNLINK
+#include "subsystems/datalink/transport.h"
+extern void send_autopilot_version(struct transport_tx *trans, struct link_device *dev);
 #endif
 
 #endif /* AUTOPILOT_H */

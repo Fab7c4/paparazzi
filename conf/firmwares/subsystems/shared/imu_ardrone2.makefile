@@ -12,9 +12,14 @@ imu_srcs   += $(SRC_BOARD)/navdata.c
 endif
 
 # Keep CFLAGS/Srcs for imu in separate expression so we can assign it to other targets
-# see: conf/autopilot/subsystems/lisa_passthrough/imu_b2_v1.1.makefile for example
 ap.CFLAGS += $(imu_CFLAGS)
 ap.srcs += $(imu_srcs)
+
+# Set the AHRS propegation frequencies
+AHRS_PROPAGATE_FREQUENCY ?= 200
+AHRS_CORRECT_FREQUENCY ?= 200
+ap.CFLAGS += -DAHRS_PROPAGATE_FREQUENCY=$(AHRS_PROPAGATE_FREQUENCY)
+ap.CFLAGS += -DAHRS_CORRECT_FREQUENCY=$(AHRS_CORRECT_FREQUENCY)
 
 #
 # Simulator

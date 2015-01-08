@@ -24,9 +24,6 @@
 CFG_SHARED=$(PAPARAZZI_SRC)/conf/firmwares/subsystems/shared
 CFG_ROTORCRAFT=$(PAPARAZZI_SRC)/conf/firmwares/subsystems/rotorcraft
 
-SRC_BOOZ_TEST=$(SRC_BOOZ)/test
-SRC_BOOZ_PRIV=booz_priv
-
 SRC_BOARD=boards/$(BOARD)
 SRC_FIRMWARE=firmwares/rotorcraft
 SRC_SUBSYSTEMS=subsystems
@@ -34,272 +31,156 @@ SRC_MODULES=modules
 
 SRC_ARCH=arch/$(ARCH)
 
-CFG_BOOZ=$(PAPARAZZI_SRC)/conf/firmwares/
-
 ROTORCRAFT_INC = -I$(SRC_FIRMWARE) -I$(SRC_BOARD)
 
 
 ap.ARCHDIR = $(ARCH)
 
-# would be better to auto-generate this
-$(TARGET).CFLAGS 	+= -DFIRMWARE=ROTORCRAFT
 
-ap.CFLAGS += $(ROTORCRAFT_INC)
-ap.CFLAGS += -DBOARD_CONFIG=$(BOARD_CFG) -DPERIPHERALS_AUTO_INIT
-ap.srcs    = $(SRC_FIRMWARE)/main.c
-ap.srcs   += mcu.c
-ap.srcs   += $(SRC_ARCH)/mcu_arch.c
+######################################################################
+##
+## COMMON ROTORCRAFT ALL TARGETS (AP + NPS)
+##
 
-#
-# Math functions
-#
-ap.srcs += math/pprz_geodetic_int.c math/pprz_geodetic_float.c math/pprz_geodetic_double.c math/pprz_trig_int.c math/pprz_orientation_conversion.c
-
-ifeq ($(ARCH), stm32)
-ap.srcs += lisa/plug_sys.c
-endif
-#
-# Interrupts
-#
-ifeq ($(ARCH), lpc21)
-ap.srcs += $(SRC_ARCH)/armVIC.c
-endif
-
-ifeq ($(ARCH), stm32)
-ap.srcs += $(SRC_ARCH)/mcu_periph/gpio_arch.c
-endif
-
-#
-# LEDs
-#
-ap.CFLAGS += -DUSE_LED
-ifeq ($(ARCH), stm32)
-ap.srcs += $(SRC_ARCH)/led_hw.c
-endif
-
-ifeq ($(BOARD)$(BOARD_TYPE), ardroneraw)
-ap.srcs   += $(SRC_BOARD)/gpio_ardrone.c
-endif
+$(TARGET).CFLAGS += $(ROTORCRAFT_INC)
+$(TARGET).CFLAGS += -DBOARD_CONFIG=$(BOARD_CFG)
+$(TARGET).CFLAGS += -DPERIPHERALS_AUTO_INIT
+$(TARGET).srcs   += mcu.c
+$(TARGET).srcs   += $(SRC_ARCH)/mcu_arch.c
 
 # frequency of main periodic
 PERIODIC_FREQUENCY ?= 512
-ap.CFLAGS += -DPERIODIC_FREQUENCY=$(PERIODIC_FREQUENCY)
-
-TELEMETRY_FREQUENCY ?= 60
-ap.CFLAGS += -DTELEMETRY_FREQUENCY=$(TELEMETRY_FREQUENCY)
+$(TARGET).CFLAGS += -DPERIODIC_FREQUENCY=$(PERIODIC_FREQUENCY)
 
 #
 # Systime
 #
-ap.CFLAGS += -DUSE_SYS_TIME
-ap.srcs += mcu_periph/sys_time.c $(SRC_ARCH)/mcu_periph/sys_time_arch.c
-ifneq ($(SYS_TIME_LED),none)
-ap.CFLAGS += -DSYS_TIME_LED=$(SYS_TIME_LED)
-endif
+$(TARGET).srcs += mcu_periph/sys_time.c $(SRC_ARCH)/mcu_periph/sys_time_arch.c
+
 
 #
-# Telemetry/Datalink
+# Math functions
 #
-# include subsystems/rotorcraft/telemetry_transparent.makefile
-# or
-# include subsystems/rotorcraft/telemetry_xbee_api.makefile
+$(TARGET).srcs += math/pprz_geodetic_int.c math/pprz_geodetic_float.c math/pprz_geodetic_double.c math/pprz_trig_int.c math/pprz_orientation_conversion.c math/pprz_algebra_int.c math/pprz_algebra_float.c math/pprz_algebra_double.c
+
+$(TARGET).srcs += subsystems/settings.c
+$(TARGET).srcs += $(SRC_ARCH)/subsystems/settings_arch.c
+
+$(TARGET).srcs += subsystems/actuators.c
+$(TARGET).srcs += subsystems/commands.c
+
+$(TARGET).srcs += state.c
+
 #
-ap.srcs += subsystems/settings.c
-ap.srcs += $(SRC_ARCH)/subsystems/settings_arch.c
+# BARO_BOARD (if existing/configured)
+#
+include $(CFG_SHARED)/baro_board.makefile
 
-ap.srcs += mcu_periph/uart.c
-ap.srcs += $(SRC_ARCH)/mcu_periph/uart_arch.c
 
-# I2C is needed for speed controllers and barometers on lisa
-ifeq ($(TARGET), ap)
+$(TARGET).srcs += $(SRC_FIRMWARE)/stabilization.c
+$(TARGET).srcs += $(SRC_FIRMWARE)/stabilization/stabilization_none.c
+$(TARGET).srcs += $(SRC_FIRMWARE)/stabilization/stabilization_rate.c
+
+$(TARGET).srcs += $(SRC_FIRMWARE)/guidance/guidance_h.c
+$(TARGET).srcs += $(SRC_FIRMWARE)/guidance/guidance_h_ref.c
+$(TARGET).srcs += $(SRC_FIRMWARE)/guidance/guidance_v.c
+$(TARGET).srcs += $(SRC_FIRMWARE)/guidance/guidance_v_ref.c
+$(TARGET).srcs += $(SRC_FIRMWARE)/guidance/guidance_v_adapt.c
+
+include $(CFG_ROTORCRAFT)/navigation.makefile
+
+$(TARGET).srcs += $(SRC_FIRMWARE)/main.c
+$(TARGET).srcs += $(SRC_FIRMWARE)/autopilot.c
+
+######################################################################
+##
+## COMMON HARDWARE SUPPORT FOR ALL TARGETS
+##
+
 $(TARGET).srcs += mcu_periph/i2c.c
 $(TARGET).srcs += $(SRC_ARCH)/mcu_periph/i2c_arch.c
+
+
+#
+# Electrical subsystem / Analog Backend
+#
+ifneq ($(ARCH), linux)
+$(TARGET).CFLAGS += -DUSE_ADC
+$(TARGET).srcs   += $(SRC_ARCH)/mcu_periph/adc_arch.c
+$(TARGET).srcs   += subsystems/electrical.c
 endif
 
-ap.srcs += subsystems/commands.c
-ap.srcs += subsystems/actuators.c
 
-#
-# Radio control choice
-#
-# include subsystems/rotorcraft/radio_control_ppm.makefile
-# or
-# include subsystems/rotorcraft/radio_control_spektrum.makefile
-#
+######################################################################
+##
+## HARDWARE SUPPORT FOR ALL NON-SIMULATION TARGETS (ap)
+##
 
-#
-# Actuator choice
-#
-# include subsystems/rotorcraft/actuators_mkk.makefile
-# or
-# include subsystems/rotorcraft/actuators_asctec.makefile
-# or
-# include subsystems/rotorcraft/actuators_asctec_v2.makefile
-#
-
-#
-# IMU choice
-#
-# include subsystems/rotorcraft/imu_b2v1.makefile
-# or
-# include subsystems/rotorcraft/imu_b2v1_1.makefile
-# or
-# include subsystems/rotorcraft/imu_crista.makefile
-#
-
-#
-# BARO
-#
-# booz baro
-ifeq ($(BOARD), booz)
-ap.srcs += $(SRC_BOARD)/baro_board.c
-else ifeq ($(BOARD), lisa_l)
-ap.CFLAGS += -DUSE_I2C2
-ap.srcs += $(SRC_BOARD)/baro_board.c
-
-# Ardrone baro
-else ifeq ($(BOARD)$(BOARD_TYPE), ardroneraw)
-ap.srcs += $(SRC_BOARD)/baro_board.c
-else ifeq ($(BOARD)$(BOARD_TYPE), ardronesdk)
-ap.srcs += $(SRC_BOARD)/baro_board_dummy.c
-
-# Lisa/M baro
-else ifeq ($(BOARD), lisa_m)
-# defaults to i2c baro bmp085 on the board
-LISA_M_BARO ?= BARO_BOARD_BMP085
-  ifeq ($(LISA_M_BARO), BARO_MS5611_SPI)
-    include $(CFG_SHARED)/spi_master.makefile
-    ap.CFLAGS += -DUSE_SPI2 -DUSE_SPI_SLAVE3
-    ap.srcs += $(SRC_BOARD)/baro_ms5611_spi.c
-  else ifeq ($(LISA_M_BARO), BARO_MS5611_I2C)
-    ap.CFLAGS += -DUSE_I2C2
-    ap.srcs += $(SRC_BOARD)/baro_ms5611_i2c.c
-  else ifeq ($(LISA_M_BARO), BARO_BOARD_BMP085)
-    ap.srcs += $(SRC_BOARD)/baro_board.c
-	ap.CFLAGS += -DUSE_I2C2
-  endif
-  ap.CFLAGS += -D$(LISA_M_BARO)
-
-# Lia baro (no bmp onboard)
-else ifeq ($(BOARD), lia)
-# fixme, reuse the baro drivers in lisa_m dir
-LIA_BARO ?= BARO_MS5611_SPI
-  ifeq ($(LIA_BARO), BARO_MS5611_SPI)
-    include $(CFG_SHARED)/spi_master.makefile
-    ap.CFLAGS += -DUSE_SPI2 -DUSE_SPI_SLAVE3
-    ap.srcs += boards/lisa_m/baro_ms5611_spi.c
-  else ifeq ($(LIA_BARO), BARO_MS5611_I2C)
-    ap.CFLAGS += -DUSE_I2C2
-    ap.srcs += boards/lisa_m/baro_ms5611_i2c.c
-  endif
-  ap.CFLAGS += -D$(LIA_BARO)
-
-# navgo baro
-else ifeq ($(BOARD), navgo)
-include $(CFG_SHARED)/spi_master.makefile
-ap.CFLAGS += -DUSE_SPI_SLAVE0
-ap.CFLAGS += -DUSE_SPI1
-ap.srcs += peripherals/mcp355x.c
-ap.srcs += $(SRC_BOARD)/baro_board.c
-
-# apogee baro
-else ifeq ($(BOARD), apogee)
-ap.CFLAGS += -DUSE_I2C1
-ap.CFLAGS += -DMPL3115_I2C_DEV=i2c1
-ap.CFLAGS += -DMPL3115_ALT_MODE=0
-ap.srcs += peripherals/mpl3115.c
-ap.srcs += $(SRC_BOARD)/baro_board.c
-endif
-
-ifneq ($(BARO_LED),none)
-ap.CFLAGS += -DROTORCRAFT_BARO_LED=$(BARO_LED)
-endif
-
-#
-# Analog Backend
-#
-
-ifeq ($(ARCH), lpc21)
-ap.CFLAGS += -DUSE_ADC
-ap.srcs   += $(SRC_ARCH)/mcu_periph/adc_arch.c
-ap.srcs   += subsystems/electrical.c
 # baro has variable offset amplifier on booz board
 ifeq ($(BOARD), booz)
-ap.CFLAGS += -DUSE_DAC
-ap.srcs   += $(SRC_ARCH)/mcu_periph/dac_arch.c
-endif
-else ifeq ($(ARCH), stm32)
-ap.CFLAGS += -DUSE_ADC
-ap.srcs   += $(SRC_ARCH)/mcu_periph/adc_arch.c
-ap.srcs   += subsystems/electrical.c
+ns_CFLAGS += -DUSE_DAC
+ns_srcs   += $(SRC_ARCH)/mcu_periph/dac_arch.c
 else ifeq ($(BOARD)$(BOARD_TYPE), ardronesdk)
-ap.srcs   += $(SRC_BOARD)/electrical_dummy.c
+ns_srcs   += $(SRC_BOARD)/electrical_dummy.c
 else ifeq ($(BOARD)$(BOARD_TYPE), ardroneraw)
-ap.srcs   += $(SRC_ARCH)/subsystems/electrical/electrical_arch.c
+ns_srcs   += $(SRC_BOARD)/electrical_raw.c
+else ifeq ($(BOARD), bebop)
+ns_srcs   += $(SRC_BOARD)/electrical.c
+endif
+
+#
+# Interrupts
+#
+ifeq ($(ARCH), lpc21)
+ns_srcs += $(SRC_ARCH)/armVIC.c
+endif
+
+ifeq ($(ARCH), stm32)
+ns_srcs += $(SRC_ARCH)/mcu_periph/gpio_arch.c
 endif
 
 
-
 #
-# GPS choice
+# LEDs
 #
-# include subsystems/rotorcraft/gps_ubx.makefile
-# or
-# include subsystems/rotorcraft/gps_skytraq.makefile
-#or
-# include subsystems/rotorcraft/gps_piksi.makefile
-# or
-# nothing
-#
-
-
-#
-# AHRS choice
-#
-# include subsystems/rotorcraft/ahrs_cmpl.makefile
-# or
-# include subsystems/rotorcraft/ahrs_lkf.makefile
-#
-
-ap.srcs += $(SRC_FIRMWARE)/autopilot.c
-
-ap.srcs += state.c
-
-ap.srcs += $(SRC_FIRMWARE)/stabilization.c
-ap.srcs += $(SRC_FIRMWARE)/stabilization/stabilization_none.c
-ap.srcs += $(SRC_FIRMWARE)/stabilization/stabilization_rate.c
-
-ap.CFLAGS += -DUSE_NAVIGATION
-ap.srcs += $(SRC_FIRMWARE)/guidance/guidance_h.c
-ap.srcs += $(SRC_FIRMWARE)/guidance/guidance_h_ref.c
-ap.srcs += $(SRC_FIRMWARE)/guidance/guidance_v.c
-ap.srcs += $(SRC_FIRMWARE)/guidance/guidance_v_ref.c
-
-#
-# INS choice
-#
-# include subsystems/rotorcraft/ins.makefile
-# or
-# include subsystems/rotorcraft/ins_extended.makefile
-#
-# extra:
-# include subsystems/rotorcraft/ins_hff.makefile
-#
-
-ap.srcs += $(SRC_FIRMWARE)/navigation.c
-ap.srcs += subsystems/navigation/common_flight_plan.c
-
-#
-# FMS  choice
-#
-# include booz2_fms_test_signal.makefile
-# or
-# include booz2_fms_datalink.makefile
-# or
-# nothing
-#
-ifeq ($(ARCH), omap)
-SRC_FMS=fms
-ap.CFLAGS += -I. -I$(SRC_FMS)
-ap.srcs   += $(SRC_FMS)/fms_serial_port.c
+ns_CFLAGS += -DUSE_LED
+ifneq ($(SYS_TIME_LED),none)
+ns_CFLAGS += -DSYS_TIME_LED=$(SYS_TIME_LED)
 endif
+
+ifeq ($(ARCH), stm32)
+ns_srcs += $(SRC_ARCH)/led_hw.c
+endif
+
+ifeq ($(BOARD)$(BOARD_TYPE), ardroneraw)
+ns_srcs += $(SRC_BOARD)/gpio_ardrone.c
+endif
+
+
+ns_srcs += mcu_periph/uart.c
+ns_srcs += $(SRC_ARCH)/mcu_periph/uart_arch.c
+ifeq ($(ARCH), linux)
+ns_srcs += $(SRC_ARCH)/serial_port.c
+endif
+
+
+#
+# add other subsystems to rotorcraft firmware in airframe file:
+#
+# telemetry
+# radio_control
+# actuators
+# imu
+# gps
+# ahrs
+# ins
+#
+
+
+######################################################################
+##
+## Final Target Allocations
+##
+
+ap.CFLAGS 		+= $(ns_CFLAGS)
+ap.srcs 		+= $(ns_srcs)

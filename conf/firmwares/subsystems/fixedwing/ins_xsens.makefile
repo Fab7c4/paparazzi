@@ -28,6 +28,7 @@ ap.CFLAGS += -DUSE_UART$(XSENS_UART_NR)
 ap.CFLAGS += -DINS_LINK=UART$(XSENS_UART_NR)
 ap.CFLAGS += -DUART$(XSENS_UART_NR)_BAUD=$(XSENS_UART_BAUD)
 ap.CFLAGS += -DXSENS_OUTPUT_MODE=0x1836
+ap.srcs   += $(SRC_SUBSYSTEMS)/ins.c
 ap.srcs   += $(SRC_MODULES)/ins/ins_xsens.c
 ap.CFLAGS += -DAHRS_TRIGGERED_ATTITUDE_LOOP
 
@@ -46,21 +47,23 @@ ap.srcs += $(SRC_SUBSYSTEMS)/gps.c
 
 #########################################
 ## Simulator
+SIM_TARGETS = sim jsbsim nps
 
-sim.CFLAGS += -DAHRS_TYPE_H=\"subsystems/ahrs/ahrs_sim.h\"
-sim.CFLAGS += -DUSE_AHRS -DAHRS_UPDATE_FW_ESTIMATOR
+ifneq (,$(findstring $(TARGET),$(SIM_TARGETS)))
 
-sim.srcs   += $(SRC_SUBSYSTEMS)/ahrs.c
-sim.srcs   += $(SRC_SUBSYSTEMS)/ahrs/ahrs_sim.c
+$(TARGET).CFLAGS += -DAHRS_TYPE_H=\"subsystems/ahrs/ahrs_sim.h\"
+$(TARGET).CFLAGS += -DUSE_AHRS
 
-sim.srcs   += $(SRC_SUBSYSTEMS)/ins/ins_gps_passthrough.c
+$(TARGET).srcs   += $(SRC_SUBSYSTEMS)/ahrs.c
+$(TARGET).srcs   += $(SRC_SUBSYSTEMS)/ahrs/ahrs_sim.c
 
-sim.CFLAGS += -DUSE_GPS -DGPS_USE_LATLONG
-sim.CFLAGS += -DGPS_TYPE_H=\"subsystems/gps/gps_sim.h\"
-sim.srcs += $(SRC_SUBSYSTEMS)/gps/gps_sim.c
-sim.srcs += $(SRC_SUBSYSTEMS)/gps.c
+$(TARGET).srcs   += $(SRC_SUBSYSTEMS)/ins.c
+$(TARGET).srcs   += $(SRC_SUBSYSTEMS)/ins/ins_gps_passthrough.c
 
+$(TARGET).CFLAGS += -DUSE_GPS -DGPS_USE_LATLONG
+$(TARGET).CFLAGS += -DGPS_TYPE_H=\"subsystems/gps/gps_sim.h\"
+$(TARGET).srcs += $(SRC_SUBSYSTEMS)/gps/gps_sim.c
+$(TARGET).srcs += $(SRC_SUBSYSTEMS)/gps.c
 
-
-
+endif
 

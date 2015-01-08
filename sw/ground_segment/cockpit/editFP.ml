@@ -1,8 +1,6 @@
-(***************** Editing ONE (single) flight plan **************************)open Printf
+(***************** Editing ONE (single) flight plan **************************)
+open Printf
 open Latlong
-
-module G2D = Geometry_2d
-
 
 let (//) = Filename.concat
 let fp_example = Env.flight_plans_path // "example.xml"
@@ -50,7 +48,9 @@ let save_fp = fun geomap ->
           None -> ()
         | Some file ->
           let f  = open_out file in
-          fprintf f "<!DOCTYPE flight_plan SYSTEM \"flight_plan.dtd\">\n\n";
+          let fp_path = Str.replace_first (Str.regexp Env.flight_plans_path) "" (Filename.dirname file) in
+          let rel_path = Str.global_replace (Str.regexp (Printf.sprintf "%s[^%s]+" Filename.dir_sep Filename.dir_sep)) (Filename.parent_dir_name // "") fp_path in
+          fprintf f "<!DOCTYPE flight_plan SYSTEM \"%s%s\">\n\n" rel_path "flight_plan.dtd";
           fprintf f "%s\n" (ExtXml.to_string_fmt fp#xml);
           close_out f;
           current_fp := Some (fp, file);
@@ -63,6 +63,7 @@ let close_fp = fun geomap ->
     | Some (fp, _filename) ->
       let close = fun () ->
         fp#destroy ();
+        geomap#clear_georefs ();
         current_fp := None in
       match GToolbox.question_box ~title:"Closing flight plan" ~buttons:["Close"; "Save&Close"; "Cancel"] "Do you want to save/close ?" with
           2 -> save_fp geomap; close ()

@@ -32,16 +32,18 @@
 #include <math.h>
 #include "imu_umarim.h"
 #include "mcu_periph/i2c.h"
-#include "led.h"
+#include "generated/airframe.h"
 
 // Downlink
 #include "mcu_periph/uart.h"
 #include "messages.h"
 #include "subsystems/datalink/downlink.h"
 
-#ifndef DOWNLINK_DEVICE
-#define DOWNLINK_DEVICE DOWNLINK_AP_DEVICE
+
+#ifndef UMARIM_ACCEL_RANGE
+#define UMARIM_ACCEL_RANGE ADXL345_RANGE_16G
 #endif
+PRINT_CONFIG_VAR(UMARIM_ACCEL_RANGE)
 
 #ifndef UMARIM_ACCEL_RATE
 #define UMARIM_ACCEL_RATE ADXL345_RATE_50HZ
@@ -74,12 +76,13 @@ void imu_impl_init(void)
   adxl345_i2c_init(&imu_umarim.adxl, &(IMU_UMARIM_I2C_DEV), ADXL345_ADDR_ALT);
   // change the default data rate
   imu_umarim.adxl.config.rate = UMARIM_ACCEL_RATE;
+  imu_umarim.adxl.config.range = UMARIM_ACCEL_RANGE;
 
   imu_umarim.gyr_valid = FALSE;
   imu_umarim.acc_valid = FALSE;
 }
 
-void imu_periodic( void )
+void imu_periodic(void)
 {
   // Start reading the latest gyroscope data
   itg3200_periodic(&imu_umarim.itg);
@@ -90,14 +93,16 @@ void imu_periodic( void )
   //RunOnceEvery(10,imu_umarim_downlink_raw());
 }
 
-void imu_umarim_downlink_raw( void )
+void imu_umarim_downlink_raw(void)
 {
-  DOWNLINK_SEND_IMU_GYRO_RAW(DefaultChannel, DefaultDevice,&imu.gyro_unscaled.p,&imu.gyro_unscaled.q,&imu.gyro_unscaled.r);
-  DOWNLINK_SEND_IMU_ACCEL_RAW(DefaultChannel, DefaultDevice,&imu.accel_unscaled.x,&imu.accel_unscaled.y,&imu.accel_unscaled.z);
+  DOWNLINK_SEND_IMU_GYRO_RAW(DefaultChannel, DefaultDevice, &imu.gyro_unscaled.p, &imu.gyro_unscaled.q,
+                             &imu.gyro_unscaled.r);
+  DOWNLINK_SEND_IMU_ACCEL_RAW(DefaultChannel, DefaultDevice, &imu.accel_unscaled.x, &imu.accel_unscaled.y,
+                              &imu.accel_unscaled.z);
 }
 
 
-void imu_umarim_event( void )
+void imu_umarim_event(void)
 {
   // If the itg3200 I2C transaction has succeeded: convert the data
   itg3200_event(&imu_umarim.itg);
@@ -110,7 +115,8 @@ void imu_umarim_event( void )
   // If the adxl345 I2C transaction has succeeded: convert the data
   adxl345_i2c_event(&imu_umarim.adxl);
   if (imu_umarim.adxl.data_available) {
-    VECT3_ASSIGN(imu.accel_unscaled, imu_umarim.adxl.data.vect.y, -imu_umarim.adxl.data.vect.x, imu_umarim.adxl.data.vect.z);
+    VECT3_ASSIGN(imu.accel_unscaled, imu_umarim.adxl.data.vect.y, -imu_umarim.adxl.data.vect.x,
+                 imu_umarim.adxl.data.vect.z);
     imu_umarim.adxl.data_available = FALSE;
     imu_umarim.acc_valid = TRUE;
   }

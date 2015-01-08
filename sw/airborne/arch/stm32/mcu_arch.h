@@ -30,6 +30,8 @@
 #ifndef STM32_MCU_ARCH_H
 #define STM32_MCU_ARCH_H
 
+#include "std.h"
+
 extern void mcu_arch_init(void);
 
 
@@ -38,13 +40,15 @@ extern void mcu_arch_init(void);
  */
 #define MyByteSwap16(in, out) {                 \
     asm volatile (                              \
-          "rev16        %0, %1\n\t"     \
-          : "=r" (out)                  \
-          : "r"(in)                     \
-          );                            \
+        "rev16        %0, %1\n\t"     \
+        : "=r" (out)                  \
+        : "r"(in)                     \
+                 );                            \
   }
 
 #define mcu_int_enable()  {}
 #define mcu_int_disable() {}
+
+uint32_t timer_get_frequency(uint32_t timer_peripheral);
 
 #endif /* STM32_MCU_ARCH_H */

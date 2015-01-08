@@ -46,8 +46,6 @@ struct FloatAttitudeGains {
   struct FloatVect3  surface_i;
 };
 
-extern struct FloatEulers stabilization_att_sum_err_eulers;
-
 extern float stabilization_att_fb_cmd[COMMANDS_NB];
 extern float stabilization_att_ff_cmd[COMMANDS_NB];
 

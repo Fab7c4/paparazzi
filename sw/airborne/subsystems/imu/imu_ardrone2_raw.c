@@ -29,26 +29,7 @@
 #include "imu_ardrone2_raw.h"
 #include "mcu_periph/uart.h"
 
-void imu_impl_init(void) {
-  imu_data_available = FALSE;
+void imu_impl_init(void)
+{
   navdata_init();
-}
-
-void imu_periodic(void) {
-  navdata_update();
-  //checks if the navboard has a new dataset ready
-  if (navdata_imu_available == TRUE) {
-    navdata_imu_available = FALSE;
-    RATES_ASSIGN(imu.gyro_unscaled, navdata->vx, navdata->vy, navdata->vz);
-    VECT3_ASSIGN(imu.accel_unscaled, navdata->ax, navdata->ay, navdata->az);
-    VECT3_ASSIGN(imu.mag_unscaled, navdata->mx, navdata->my, navdata->mz);
-    imu_data_available = TRUE;
-  }
-  else {
-    imu_data_available = FALSE;
-  }
-
-#ifdef USE_UART1
-  uart1_handler();
-#endif
 }

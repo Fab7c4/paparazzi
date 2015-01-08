@@ -30,22 +30,7 @@
 #ifndef BOARDS_ARDRONE2_BARO_H
 #define BOARDS_ARDRONE2_BARO_H
 
-#if BOARD_HAS_BARO
-#include "navdata.h"
-
-int baro_data_available;
-
-static inline void baro_event(void (*b_abs_handler)(void), void (*b_diff_handler)(void)){
-  if (baro_data_available) {
-    b_abs_handler();
-  }
-}
-
-#define BaroEvent(_b_abs_handler, _b_diff_handler) {\
-  baro_event(_b_abs_handler,_b_diff_handler);\
-}
-#else
-#define BaroEvent(_b_abs_handler, _b_diff_handler) {}
-#endif
+extern void ardrone_baro_event(void);
+#define BaroEvent ardrone_baro_event
 
 #endif /* BOARDS_ARDRONE2_BARO_H */

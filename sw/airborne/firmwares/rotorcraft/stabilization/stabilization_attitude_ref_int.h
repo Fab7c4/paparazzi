@@ -29,30 +29,14 @@
 
 #include "math/pprz_algebra_int.h"
 
-#include "state.h"
-
-extern struct Int32Eulers stab_att_ref_euler; ///< with #REF_ANGLE_FRAC
-extern struct Int32Quat   stab_att_ref_quat;  ///< with #INT32_QUAT_FRAC
-extern struct Int32Rates  stab_att_ref_rate;  ///< with #REF_RATE_FRAC
-extern struct Int32Rates  stab_att_ref_accel; ///< with #REF_ACCEL_FRAC
-
-struct Int32RefModel {
-  struct Int32Rates omega;
-  struct Int32Rates zeta;
-};
-
-extern struct Int32RefModel stab_att_ref_model;
-
 #define REF_ACCEL_FRAC 12
 #define REF_RATE_FRAC  16
 #define REF_ANGLE_FRAC 20
 
-#define REF_ANGLE_PI      BFP_OF_REAL(3.1415926535897932384626433832795029, REF_ANGLE_FRAC)
-#define REF_ANGLE_TWO_PI  BFP_OF_REAL(2.*3.1415926535897932384626433832795029, REF_ANGLE_FRAC)
-#define ANGLE_REF_NORMALIZE(_a) {                       \
-    while (_a >  REF_ANGLE_PI)  _a -= REF_ANGLE_TWO_PI; \
-    while (_a < -REF_ANGLE_PI)  _a += REF_ANGLE_TWO_PI; \
-  }
+extern struct Int32Eulers stab_att_sp_euler; ///< with #INT32_ANGLE_FRAC
+extern struct Int32Eulers stab_att_ref_euler; ///< with #REF_ANGLE_FRAC
+extern struct Int32Rates  stab_att_ref_rate;  ///< with #REF_RATE_FRAC
+extern struct Int32Rates  stab_att_ref_accel; ///< with #REF_ACCEL_FRAC
 
 extern void stabilization_attitude_ref_init(void);
 extern void stabilization_attitude_ref_update(void);

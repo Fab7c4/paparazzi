@@ -20,12 +20,51 @@
  * Boston, MA 02111-1307, USA.
  */
 
+/**
+ * @file modules/cam_control/rotorcraft_cam.c
+ * Camera control module for rotorcraft.
+ *
+ * The camera is controled by the heading of the vehicle for pan
+ * and can be controlled by a servo for tilt if defined.
+ *
+ * Four modes:
+ *  - NONE: no control
+ *  - MANUAL: the servo position is set with PWM
+ *  - HEADING: the servo position and the heading of the rotorcraft are set with angles
+ *  - WP: the camera is tracking a waypoint (Default: CAM)
+ *
+ * If ROTORCRAFT_CAM_SWITCH_GPIO is defined, this gpio is set/cleared to switch the power
+ * of the camera on in normal modes and disable it when in NONE mode.
+ * On boards with CAM_SWITCH, ROTORCRAFT_CAM_SWITCH_GPIO can be defined to CAM_SWITCH_GPIO.
+ */
+
 #include "modules/cam_control/rotorcraft_cam.h"
 
 #include "subsystems/actuators.h"
 #include "state.h"
 #include "firmwares/rotorcraft/navigation.h"
 #include "std.h"
+
+#include "subsystems/datalink/telemetry.h"
+
+
+/** Gpio output to turn camera power power on.
+ * Control whether to set or clear the ROTORCRAFT_CAM_SWITCH_GPIO to turn on the camera power.
+ * Should be defined to either gpio_set (default) or gpio_clear.
+ * Not used if ROTORCRAFT_CAM_SWITCH_GPIO is not defined.
+ */
+#ifndef ROTORCRAFT_CAM_ON
+#define ROTORCRAFT_CAM_ON gpio_set
+#endif
+
+/** Gpio output to turn camera power power off.
+ * Control whether to set or clear the ROTORCRAFT_CAM_SWITCH_GPIO to turn off the camera power.
+ * Should be defined to either gpio_set or gpio_clear (default).
+ * Not used if ROTORCRAFT_CAM_SWITCH_GPIO is not defined.
+ */
+#ifndef ROTORCRAFT_CAM_OFF
+#define ROTORCRAFT_CAM_OFF gpio_clear
+#endif
 
 uint8_t rotorcraft_cam_mode;
 
@@ -49,8 +88,30 @@ int16_t rotorcraft_cam_pan;
 #define ROTORCRAFT_CAM_PAN_MIN 0
 #define ROTORCRAFT_CAM_PAN_MAX INT32_ANGLE_2_PI
 
-void rotorcraft_cam_init(void) {
-  rotorcraft_cam_SetCamMode(ROTORCRAFT_CAM_DEFAULT_MODE);
+static void send_cam(struct transport_tx *trans, struct link_device *dev)
+{
+  pprz_msg_send_ROTORCRAFT_CAM(trans, dev, AC_ID,
+                               &rotorcraft_cam_tilt, &rotorcraft_cam_pan);
+}
+
+void rotorcraft_cam_set_mode(uint8_t mode)
+{
+  rotorcraft_cam_mode = mode;
+#ifdef ROTORCRAFT_CAM_SWITCH_GPIO
+  if (rotorcraft_cam_mode == ROTORCRAFT_CAM_MODE_NONE) {
+    ROTORCRAFT_CAM_OFF(ROTORCRAFT_CAM_SWITCH_GPIO);
+  } else {
+    ROTORCRAFT_CAM_ON(ROTORCRAFT_CAM_SWITCH_GPIO);
+  }
+#endif
+}
+
+void rotorcraft_cam_init(void)
+{
+#ifdef ROTORCRAFT_CAM_SWITCH_GPIO
+  gpio_setup_output(ROTORCRAFT_CAM_SWITCH_GPIO);
+#endif
+  rotorcraft_cam_set_mode(ROTORCRAFT_CAM_DEFAULT_MODE);
 #if ROTORCRAFT_CAM_USE_TILT
   rotorcraft_cam_tilt_pwm = ROTORCRAFT_CAM_TILT_NEUTRAL;
   ActuatorSet(ROTORCRAFT_CAM_TILT_SERVO, rotorcraft_cam_tilt_pwm);
@@ -59,9 +120,12 @@ void rotorcraft_cam_init(void) {
 #endif
   rotorcraft_cam_tilt = 0;
   rotorcraft_cam_pan = 0;
+
+  register_periodic_telemetry(DefaultPeriodic, "ROTORCRAFT_CAM", send_cam);
 }
 
-void rotorcraft_cam_periodic(void) {
+void rotorcraft_cam_periodic(void)
+{
 
   switch (rotorcraft_cam_mode) {
     case ROTORCRAFT_CAM_MODE_NONE:
@@ -77,8 +141,9 @@ void rotorcraft_cam_periodic(void) {
       break;
     case ROTORCRAFT_CAM_MODE_HEADING:
 #if ROTORCRAFT_CAM_USE_TILT_ANGLES
-      Bound(rotorcraft_cam_tilt,CT_MIN,CT_MAX);
-      rotorcraft_cam_tilt_pwm = ROTORCRAFT_CAM_TILT_MIN + D_TILT * (rotorcraft_cam_tilt - CAM_TA_MIN) / (CAM_TA_MAX - CAM_TA_MIN);
+      Bound(rotorcraft_cam_tilt, CT_MIN, CT_MAX);
+      rotorcraft_cam_tilt_pwm = ROTORCRAFT_CAM_TILT_MIN + D_TILT * (rotorcraft_cam_tilt - CAM_TA_MIN) /
+                                (CAM_TA_MAX - CAM_TA_MIN);
 #endif
 #if ROTORCRAFT_CAM_USE_PAN
       INT32_COURSE_NORMALIZE(rotorcraft_cam_pan);
@@ -90,16 +155,17 @@ void rotorcraft_cam_periodic(void) {
       {
         struct Int32Vect2 diff;
         VECT2_DIFF(diff, waypoints[ROTORCRAFT_CAM_TRACK_WP], *stateGetPositionEnu_i());
-        INT32_VECT2_RSHIFT(diff,diff,INT32_POS_FRAC);
-        INT32_ATAN2(rotorcraft_cam_pan,diff.x,diff.y);
+        INT32_VECT2_RSHIFT(diff, diff, INT32_POS_FRAC);
+        rotorcraft_cam_pan = int32_atan2(diff.x, diff.y);
         nav_heading = rotorcraft_cam_pan;
 #if ROTORCRAFT_CAM_USE_TILT_ANGLES
         int32_t dist, height;
-        INT32_VECT2_NORM(dist, diff);
+        dist = INT32_VECT2_NORM(diff);
         height = (waypoints[ROTORCRAFT_CAM_TRACK_WP].z - stateGetPositionEnu_i()->z) >> INT32_POS_FRAC;
-        INT32_ATAN2(rotorcraft_cam_tilt, height, dist);
+        rotorcraft_cam_tilt = int32_atan2(height, dist);
         Bound(rotorcraft_cam_tilt, CAM_TA_MIN, CAM_TA_MAX);
-        rotorcraft_cam_tilt_pwm = ROTORCRAFT_CAM_TILT_MIN + D_TILT * (rotorcraft_cam_tilt - CAM_TA_MIN) / (CAM_TA_MAX - CAM_TA_MIN);
+        rotorcraft_cam_tilt_pwm = ROTORCRAFT_CAM_TILT_MIN + D_TILT * (rotorcraft_cam_tilt - CAM_TA_MIN) /
+                                  (CAM_TA_MAX - CAM_TA_MIN);
 #endif
       }
 #endif
@@ -111,4 +177,3 @@ void rotorcraft_cam_periodic(void) {
   ActuatorSet(ROTORCRAFT_CAM_TILT_SERVO, rotorcraft_cam_tilt_pwm);
 #endif
 }
-

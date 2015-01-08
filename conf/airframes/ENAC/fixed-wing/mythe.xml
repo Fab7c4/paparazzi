@@ -9,11 +9,10 @@
 <airframe name="Funjet">
 
   <modules>
-    <!--load name="baro_board.xml"/-->
     <load name="airspeed_adc.xml">
       <configure name="ADC_AIRSPEED" value="ADC_0"/>
-      <define name="AIRSPEED_QUADRATIC_SCALE" value="1.09378"/>
-      <define name="AIRSPEED_BIAS" value="110"/>
+      <define name="AIRSPEED_ADC_QUADRATIC_SCALE" value="1.09378"/>
+      <define name="AIRSPEED_ADC_BIAS" value="110"/>
     </load>
     <load name="AOA_adc.xml">
       <configure name="ADC_AOA" value="ADC_2"/>
@@ -44,11 +43,9 @@
     <define name="USE_I2C0"/>
     <define name="USE_I2C1"/>
     <!--define name="AGR_CLIMB"/-->
-    <define name="ALT_KALMAN"/>
     <define name="USE_AIRSPEED"/>
     <!--define name="LOITER_TRIM"/-->
     <!--define name="PITCH_TRIM"/-->
-    <define name="USE_GYRO_PITCH_RATE"/>
     <define name="SENSOR_SYNC_SEND"/>
 
     <target name="sim" board="pc"/>
@@ -66,9 +63,7 @@
 
     <!-- Actuators are automatically chosen according to board-->
     <subsystem name="imu"     type="umarim"/>
-    <subsystem name="ahrs"    type="float_dcm">
-      <define name="USE_HIGH_ACCEL_FLAG"/>
-    </subsystem>
+    <subsystem name="ahrs"    type="float_dcm"/>
     <subsystem name="ins"     type="alt_float"/>
     <subsystem name="control" type="new"/>
     <subsystem name="navigation"/>
@@ -170,7 +165,6 @@
     <define name="NOMINAL_AIRSPEED" value="15." unit="m/s"/>
     <define name="CARROT" value="5." unit="s"/>
     <define name="KILL_MODE_DISTANCE" value="(1.5*MAX_DIST_FROM_HOME)"/>
-    <define name="ALT_KALMAN_ENABLED" value="TRUE"/>
 
     <define name="TRIGGER_DELAY" value="1."/>
     <define name="DEFAULT_CIRCLE_RADIUS" value="80."/>
@@ -251,7 +245,6 @@
   </section>
 
   <section name="NAV">
-    <define name="NAV_PITCH" value="0."/>
     <define name="NAV_GLIDE_PITCH_TRIM" value="0"/>
   </section>
 

@@ -36,13 +36,13 @@
 #include "generated/flight_plan.h"
 #include "generated/airframe.h"
 #include "generated/settings.h"
-#include "subsystems/nav.h"
+#include "firmwares/fixedwing/nav.h"
 #include "firmwares/fixedwing/stabilization/stabilization_attitude.h"
 #include "firmwares/fixedwing/guidance/guidance_v.h"
 #include "subsystems/sensors/infrared.h"
 #include "subsystems/commands.h"
 #include "firmwares/fixedwing/main_ap.h"
-#include "ap_downlink.h"
+#include "subsystems/datalink/downlink.h"
 #include "sim_uart.h"
 #include "subsystems/datalink/datalink.h"
 
@@ -55,11 +55,11 @@ void provide_attitude_and_rates(float phi, float theta, float psi, float p, floa
 
 void update_bat(double bat);
 
-void parse_dl_ping(char* argv[]);
-void parse_dl_acinfo(char* argv[]);
-void parse_dl_setting(char* argv[]);
-void parse_dl_get_setting(char* argv[]);
-void parse_dl_block(char* argv[]);
-void parse_dl_move_wp(char* argv[]);
+void parse_dl_ping(char *argv[]);
+void parse_dl_acinfo(char *argv[]);
+void parse_dl_setting(char *argv[]);
+void parse_dl_get_setting(char *argv[]);
+void parse_dl_block(char *argv[]);
+void parse_dl_move_wp(char *argv[]);
 
 #endif

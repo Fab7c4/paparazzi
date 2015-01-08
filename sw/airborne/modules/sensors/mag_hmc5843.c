@@ -30,25 +30,23 @@ int32_t mag_x, mag_y, mag_z;
 bool_t mag_valid;
 
 
-#ifndef DOWNLINK_DEVICE
-#define DOWNLINK_DEVICE DOWNLINK_AP_DEVICE
-#endif
 
 
-void hmc5843_module_init( void ) {
+void hmc5843_module_init(void)
+{
   hmc5843_init();
 }
 
-void hmc5843_module_periodic ( void )
+void hmc5843_module_periodic(void)
 {
   hmc5843_periodic();
   mag_x = hmc5843.data.value[0];
   mag_y = hmc5843.data.value[1];
   mag_z = hmc5843.data.value[2];
-  RunOnceEvery(30,DOWNLINK_SEND_IMU_MAG_RAW(DefaultChannel, DefaultDevice,&mag_x,&mag_y,&mag_z));
+  RunOnceEvery(30, DOWNLINK_SEND_IMU_MAG_RAW(DefaultChannel, DefaultDevice, &mag_x, &mag_y, &mag_z));
 }
 
-void hmc5843_module_event( void )
+void hmc5843_module_event(void)
 {
   hmc5843_idle_task();
 }

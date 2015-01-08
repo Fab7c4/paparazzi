@@ -121,23 +121,11 @@
 
 
 /*
- *  Range meter
+ *  Barometer (pressure and std dev in Pascal)
  */
-#define BSM_RANGEMETER_RESOLUTION  (1024)
-#define BSM_RANGEMETER_SENSITIVITY (1024. / 12.)
-#define BSM_RANGEMETER_MAX_RANGE   (6. * BSM_RANGEMETER_SENSITIVITY)
-#define BSM_RANGEMETER_DT          (1./20.)
+#define NPS_BARO_DT              (1./50.)
+#define NPS_BARO_NOISE_STD_DEV   2
 
-
-/*
- *  Barometer
- */
-/* m */
-/* aka 2^8/INS_BARO_SENS  */
-#define NPS_BARO_QNH             900.
-#define NPS_BARO_SENSITIVITY      17.066667
-#define NPS_BARO_DT              (1./100.)
-#define NPS_BARO_NOISE_STD_DEV     5.e-2
 
 /*
  *  GPS
