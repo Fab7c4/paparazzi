@@ -275,7 +275,7 @@ use negative when in mirror -->
 
     <subsystem name="telemetry"     type="transparent"/>
     <subsystem name="imu"           type="aspirin_v2.1"/>
-    <subsystem name="gps"           type="piksi">
+    <subsystem name="gps"           type="piksi_highwind">
       <configure name="GPS_PORT" value="UART3"/>
       <configure name="GPS_BAUD" value="B57600"/>
     </subsystem>

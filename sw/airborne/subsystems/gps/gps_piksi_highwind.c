@@ -21,7 +21,7 @@
 
 #include "subsystems/gps.h"
 #include "led.h"
-#include "subsystems/gps/gps_piksi.h"
+#include "subsystems/gps/gps_piksi_highwind.h"
 
 #if GPS_USE_LATLONG
 /* currently needed to get nav_utm_zone0 */
