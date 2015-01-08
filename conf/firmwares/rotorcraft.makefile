@@ -246,6 +246,8 @@ endif
 # include subsystems/rotorcraft/gps_ubx.makefile
 # or
 # include subsystems/rotorcraft/gps_skytraq.makefile
+#or
+# include subsystems/rotorcraft/gps_piksi.makefile
 # or
 # nothing
 #
