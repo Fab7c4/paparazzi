@@ -8,7 +8,7 @@
     <file name="qr_code_spi_link.h"/>
   </header>
   <init fun="qr_code_spi_link_init()"/>
-  <periodic fun="qr_code_spi_link_periodic()" autorun="TRUE"/>
+  <periodic fun="qr_code_spi_link_periodic()" autorun="TRUE" freq="5"/>
   <makefile>
     <define name="SPI_MASTER" value="1" />
     <define name="SPI_SLAVE" value="1" />

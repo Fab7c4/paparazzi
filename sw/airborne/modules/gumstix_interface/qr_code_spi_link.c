@@ -23,6 +23,7 @@
 #include "qr_code_spi_link.h"
 
 #include "subsystems/imu.h"
+#include "led.h"
 #include "mcu_periph/spi.h"
 
 #include "mcu_periph/uart.h"
@@ -33,6 +34,8 @@
 struct spi_transaction qr_code_spi_link_transaction;
 
 static volatile bool_t qr_code_spi_data_available = FALSE;
+uint8_t test_data = 0;
+
 
 uint8_t testDataOut[3] = {1, 2, 3};
 uint8_t testDataIn[3] = {9, 9, 9};
@@ -45,9 +48,9 @@ void qr_code_spi_link_init(void)
   qr_code_spi_link_transaction.cpha          = SPICphaEdge2;
   qr_code_spi_link_transaction.dss           = SPIDss8bit;
   qr_code_spi_link_transaction.bitorder      = SPIMSBFirst;
-  qr_code_spi_link_transaction.output_length = 3;
+  qr_code_spi_link_transaction.output_length = 2;
   qr_code_spi_link_transaction.output_buf    = testDataOut;
-  qr_code_spi_link_transaction.input_length  = 3;
+  qr_code_spi_link_transaction.input_length  = 2;
   qr_code_spi_link_transaction.input_buf     = testDataIn;
   qr_code_spi_link_transaction.after_cb      = qr_code_spi_link_trans_cb;
   //spi_slave_set_config(&spi1, &qr_code_spi_link_transaction);
@@ -58,11 +61,19 @@ void qr_code_spi_link_init(void)
 void qr_code_spi_link_periodic(void)
 {
   if (qr_code_spi_data_available) {
-    qr_code_spi_data_available = FALSE;
-    uint16_t x, y;
-    memcpy(&x, qr_code_spi_link_transaction.input_buf, 2);
-    memcpy(&y, qr_code_spi_link_transaction.input_buf + 2, 2);
-    DOWNLINK_SEND_VISUALTARGET(DefaultChannel, DefaultDevice, &x, &y);
+	  qr_code_spi_data_available = FALSE;
+LED_TOGGLE(5);
+testDataOut[0] = 255;
+testDataOut[1] = 0;
+testDataOut[2] = test_data +2;
+
+test_data++;
+
+
+//    uint16_t x, y;
+//    memcpy(&x, qr_code_spi_link_transaction.input_buf, 2);
+//    memcpy(&y, qr_code_spi_link_transaction.input_buf + 2, 2);
+//    DOWNLINK_SEND_VISUALTARGET(DefaultChannel, DefaultDevice, &x, &y);
     spi_slave_register(&spi1, &qr_code_spi_link_transaction);
   }
 }
