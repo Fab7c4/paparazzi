@@ -25,6 +25,7 @@
 
 #include "subsystems/imu.h"
 #include "mcu_periph/spi.h"
+#include "led.h"
 
 #ifndef SENSOR_DATA_SPI_LINK_DEVICE
 #define SENSOR_DATA_SPI_LINK_DEVICE spi1
@@ -37,59 +38,76 @@ static volatile bool_t sensors_spi_link_ready = TRUE;
 
 static void sensors_spi_link_trans_cb( struct spi_transaction *trans );
 
-void spi_link_init(void);
+static void spi_link_sensors_init(void);
+static void calculate_checksum(uint8_t* buffer, uint16_t length);
+
+
+uint8_t input[sizeof(sensor_data_t)];
 
 
 void sensor_data_spi_init(void)
 {
-    spi_link_init();
-    sensor_data.id = 0;
+    spi_link_sensors_init();
+    sensor_data.sequence_number = 0;
+    //    sensor_data.test_buffer[0] =255;
+    //    for (uint32_t i = 1 ; i < sizeof(sensor_data.test_buffer) ; i++ )
+    //    {
+    //        sensor_data.test_buffer[i] =(uint8_t) i;
+    //    }
+}
+
+
+static void spi_link_sensors_init(void) {
+
+    sensors_spi_link_transaction.cpol          = SPICpolIdleHigh;
+    sensors_spi_link_transaction.cpha          = SPICphaEdge2;
+    sensors_spi_link_transaction.dss           = SPIDss8bit;
+    sensors_spi_link_transaction.bitorder      = SPIMSBFirst;
+    sensors_spi_link_transaction.output_length = sizeof(sensor_data);
+    sensors_spi_link_transaction.output_buf    = (uint8_t*) &sensor_data;
+    sensors_spi_link_transaction.input_length  = sizeof(sensor_data);
+    sensors_spi_link_transaction.input_buf     = (uint8_t*) input;
+    sensors_spi_link_transaction.after_cb      = sensors_spi_link_trans_cb;
 }
 
 void sensor_data_spi_periodic(void)
 {
-    ImuScaleAccel(imu);
-    ImuScaleGyro(imu);
-    ImuScaleMag(imu);
-    if (sensors_spi_link_ready)
-    {
-      sensors_spi_link_ready = FALSE;
-      sensor_data.gyro_p     = imu.gyro.p;
-      sensor_data.gyro_q     = imu.gyro.q;
-      sensor_data.gyro_r     = imu.gyro.r;
-      sensor_data.acc_x      = imu.accel.x;
-      sensor_data.acc_y      = imu.accel.y;
-      sensor_data.acc_z      = imu.accel.z;
-      sensor_data.mag_x      = imu.mag.x;
-      sensor_data.mag_y      = imu.mag.y;
-      sensor_data.mag_z      = imu.mag.z;
-      sensor_data.airspeed_raw = airspeed_ets_raw;
-      sensor_data.airspeed_offset = airspeed_ets_offset;
-      sensor_data.airspeed_scaled = airspeed_ets;
-
-      spi_submit(&(SENSOR_DATA_SPI_LINK_DEVICE), &sensors_spi_link_transaction);
+    if (sensors_spi_link_ready) {
+        LED_TOGGLE(5);
+        sensors_spi_link_ready = FALSE;
+        sensor_data.gyro_p     = imu.gyro.p;
+        sensor_data.gyro_q     = imu.gyro.q;
+        sensor_data.gyro_r     = imu.gyro.r;
+        sensor_data.acc_x      = imu.accel.x;
+        sensor_data.acc_y      = imu.accel.y;
+        sensor_data.acc_z      = imu.accel.z;
+        sensor_data.mag_x      = imu.mag.x;
+        sensor_data.mag_y      = imu.mag.y;
+        sensor_data.mag_z      = imu.mag.z;
+        sensor_data.airspeed_raw = airspeed_ets_raw;
+        sensor_data.airspeed_offset = airspeed_ets_offset;
+        sensor_data.airspeed_scaled = airspeed_ets;
+        calculate_checksum((uint8_t*) &sensor_data, sizeof(sensor_data_t)-2);
+        spi_slave_register(&SENSOR_DATA_SPI_LINK_DEVICE, &sensors_spi_link_transaction);
     }
-
-    sensor_data.id++;
-
+    sensor_data.sequence_number++;
 }
 
-void spi_link_init(void) {
+static void calculate_checksum(uint8_t* buffer, uint16_t length)
+{
+     sensor_data.checksum1 = 0;
+     sensor_data.checksum2 = 0;
 
-  sensors_spi_link_transaction.select        = SPISelectUnselect;
-  sensors_spi_link_transaction.cpol          = SPICpolIdleHigh;
-  sensors_spi_link_transaction.cpha          = SPICphaEdge2;
-  sensors_spi_link_transaction.dss           = SPIDss8bit;
-  sensors_spi_link_transaction.bitorder      = SPIMSBFirst;
-  sensors_spi_link_transaction.cdiv          = SPIDiv64;
-  sensors_spi_link_transaction.slave_idx     = SENSOR_DATA_SPI_LINK_SLAVE_NUMBER;
-  sensors_spi_link_transaction.output_length = sizeof(sensor_data);
-  sensors_spi_link_transaction.output_buf    = (uint8_t*) &sensor_data;
-  sensors_spi_link_transaction.input_length  = 0;
-  sensors_spi_link_transaction.input_buf     = NULL;
-  sensors_spi_link_transaction.after_cb      = sensors_spi_link_trans_cb;
+    for (uint32_t idx = 0; idx < length; idx++)
+    {
+        sensor_data.checksum1 += buffer[idx];
+        sensor_data.checksum2;
+    }
 }
+
+
+
 
 static void sensors_spi_link_trans_cb( struct spi_transaction *trans __attribute__ ((unused)) ) {
-  sensors_spi_link_ready = TRUE;
+    sensors_spi_link_ready = TRUE;
 }

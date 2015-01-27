@@ -32,22 +32,23 @@ extern void sensor_data_spi_periodic(void);
 
 #define PACKED __attribute__((__packed__))
 
+
 typedef struct PACKED{
-    int32_t id;         // 1
-    int32_t gyro_p;     // 2
-    int32_t gyro_q;
-    int32_t gyro_r;
+    uint32_t sequence_number;         // 1
     int32_t acc_x;      // 5
     int32_t acc_y;
     int32_t acc_z;
+    int32_t gyro_p;     // 2
+    int32_t gyro_q;
+    int32_t gyro_r;
     int32_t mag_x;      // 8
     int32_t mag_y;
     int32_t mag_z;
-    int32_t airspeed_scaled;        // 11
-    int32_t airspeed_raw;
-    int32_t airspeed_offset;
-    int32_t extra1;     // 14
-    int32_t extra2;     // 15
+    float airspeed_scaled;        // 11
+    uint16_t airspeed_raw;
+    uint16_t airspeed_offset;
+    uint8_t checksum1;     // 14
+    uint8_t checksum2;     // 15
     int32_t extra3;     // 16
 }sensor_data_t ;
 
