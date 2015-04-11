@@ -1,0 +1,16 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="imu_highwind">
+  <doc>
+    <description>Offer interface for storing IMU data in an array</description>
+    <define name="USE_IMU_HIGHWIND" value="TRUE" description="Activate IMU highwind module"/>
+    <define name="IMU_HIGHWIND_ARRAY_SIZE" value="20" description="Size of array to store IMU data"/>
+  </doc>
+  <header>
+    <file name="imu_highwind.h"/>
+  </header>
+  <init fun="imu_highwind_init()"/>
+  <makefile>
+    <file name="imu_highwind.c"/>
+  </makefile>
+</module>
