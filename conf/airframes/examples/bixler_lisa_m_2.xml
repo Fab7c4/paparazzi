@@ -34,7 +34,7 @@
   </firmware>
 
   <modules>
-    <load name="nav_line.xml"/>
+    <load name="imu_highwind.xml"/>
     <load name="sensor_data_spi.xml"/>
   </modules>
 
