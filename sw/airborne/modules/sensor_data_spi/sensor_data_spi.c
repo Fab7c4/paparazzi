@@ -37,9 +37,11 @@ struct spi_transaction sensors_spi_link_transaction;
 
 static volatile bool_t sensors_spi_link_ready = TRUE;
 
+/// Declaration of methods
 static void sensors_spi_link_trans_cb( struct spi_transaction *trans );
-
 static void spi_link_sensors_init(void);
+static void getIMUData(void);
+static void getAirspeedData(void);
 static void calculate_checksum(uint8_t* buffer, uint16_t length);
 
 
@@ -82,37 +84,73 @@ void sensor_data_spi_periodic(void)
         gpio_set(GPIO_BANK_UART5_TX, GPIO_UART5_TX);
         LED_TOGGLE(5);
         sensors_spi_link_ready = FALSE;
-#ifndef USE_DEBUG_DATA
-        sensor_data.gyro_p     = imu.gyro.p;
-        sensor_data.gyro_q     = imu.gyro.q;
-        sensor_data.gyro_r     = imu.gyro.r;
-        sensor_data.acc_x      = imu.accel.x;
-        sensor_data.acc_y      = imu.accel.y;
-        sensor_data.acc_z      = imu.accel.z;
-        sensor_data.mag_x      = imu.mag.x;
-        sensor_data.mag_y      = imu.mag.y;
-        sensor_data.mag_z      = imu.mag.z;
-        sensor_data.airspeed_raw = airspeed_ets_raw;
-        sensor_data.airspeed_offset = airspeed_ets_offset;
-        sensor_data.airspeed_scaled = airspeed_ets;
-#else
-        sensor_data.acc_x      = 1;
-        sensor_data.acc_y      = 2;
-        sensor_data.acc_z      = 3;
-        sensor_data.gyro_p     = 4;
-        sensor_data.gyro_q     = 5;
-        sensor_data.gyro_r     = 6;
-        sensor_data.mag_x      = 7;
-        sensor_data.mag_y      = 8;
-        sensor_data.mag_z      = 9;
-        sensor_data.airspeed_raw = 10;
-        sensor_data.airspeed_offset = 11;
-        sensor_data.airspeed_scaled = 12.12f;
-#endif
+        getIMUData();
+        getAirspeedData();
+// #ifndef USE_DEBUG_DATA
+//         sensor_data.gyro_p     = imu.gyro.p;
+//         sensor_data.gyro_q     = imu.gyro.q;
+//         sensor_data.gyro_r     = imu.gyro.r;
+//         sensor_data.acc_x      = imu.accel.x;
+//         sensor_data.acc_y      = imu.accel.y;
+//         sensor_data.acc_z      = imu.accel.z;
+//         sensor_data.mag_x      = imu.mag.x;
+//         sensor_data.mag_y      = imu.mag.y;
+//         sensor_data.mag_z      = imu.mag.z;
+//         sensor_data.airspeed_raw = airspeed_ets_raw;
+//         sensor_data.airspeed_offset = airspeed_ets_offset;
+//         sensor_data.airspeed_scaled = airspeed_ets;
+// #else
+//         sensor_data.acc_x      = 1;
+//         sensor_data.acc_y      = 2;
+//         sensor_data.acc_z      = 3;
+//         sensor_data.gyro_p     = 4;
+//         sensor_data.gyro_q     = 5;
+//         sensor_data.gyro_r     = 6;
+//         sensor_data.mag_x      = 7;
+//         sensor_data.mag_y      = 8;
+//         sensor_data.mag_z      = 9;
+//         sensor_data.airspeed_raw = 10;
+//         sensor_data.airspeed_offset = 11;
+//         sensor_data.airspeed_scaled = 12.12f;
+// #endif
         calculate_checksum((uint8_t*) &sensor_data, sizeof(sensor_data_t)-2);
         spi_slave_register(&SENSOR_DATA_SPI_LINK_DEVICE, &sensors_spi_link_transaction);
     }
     sensor_data.sequence_number++;
+}
+
+
+
+static void getIMUData()
+{
+    for (uint16_t i = 0; i < IMU_HIGHWIND_ARRAY_SIZE; i++)
+    {
+        sensor_data.imu[i].sequence_number = imu_highwind_array[i].sequence_number;
+        sensor_data.imu[i].ticks = imu_highwind_array[i].ticks;
+        sensor_data.imu[i].acc_x = imu_highwind_array[i].accel.x;
+        sensor_data.imu[i].acc_y = imu_highwind_array[i].accel.y;
+        sensor_data.imu[i].acc_z = imu_highwind_array[i].accel.z;
+        sensor_data.imu[i].gyro_p = imu_highwind_array[i].gyro.p;
+        sensor_data.imu[i].gyro_q = imu_highwind_array[i].gyro.q;
+        sensor_data.imu[i].gyro_r = imu_highwind_array[i].gyro.r;
+        sensor_data.imu[i].mag_x = imu_highwind_array[i].mag.x;
+        sensor_data.imu[i].mag_y = imu_highwind_array[i].mag.y;
+        sensor_data.imu[i].mag_z = imu_highwind_array[i].mag.z;
+    }
+    imu_highwind_reset();
+}
+
+static void getAirspeedData()
+{
+    sensor_data.airspeed.ticks = 0;
+    sensor_data.airspeed.sequence_number = 1;
+    // sensor_data.airspeed.raw = airspeed_ets_raw;
+    // sensor_data.airspeed.offset = airspeed_ets_offset;
+    // sensor_data.airspeed.scaled = airspeed_ets;
+    sensor_data.airspeed.raw = 2;
+    sensor_data.airspeed.offset = 3;
+    sensor_data.airspeed.scaled = 4;
+
 }
 
 static void calculate_checksum(uint8_t* buffer, uint16_t length)

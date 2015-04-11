@@ -5,7 +5,7 @@
     <description>Send sensor data over SPI</description>
     <configure name="SENSOR_DATA_FREQUENCY" value="200" />
   </doc>
-    <depends>airspeed_ets</depends>
+    <depends>airspeed_ets,imu_highwind</depends>
   <header>
     <file name="sensor_data_spi.h"/>
   </header>
@@ -18,4 +18,3 @@
     <file name="sensor_data_spi.c"/>
   </makefile>
 </module>
-
