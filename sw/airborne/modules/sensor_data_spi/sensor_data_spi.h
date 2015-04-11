@@ -44,12 +44,11 @@ typedef struct PACKED{
     int32_t mag_x;      // 8
     int32_t mag_y;
     int32_t mag_z;
-    float airspeed_scaled;        // 11
     uint16_t airspeed_raw;
     uint16_t airspeed_offset;
+    float airspeed_scaled;        // 11  
     uint8_t checksum1;     // 14
     uint8_t checksum2;     // 15
-    int32_t extra3;     // 16
 }sensor_data_t ;
 
 
