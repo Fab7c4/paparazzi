@@ -26,6 +26,7 @@
 #include "subsystems/imu.h"
 #include "mcu_periph/spi.h"
 #include "led.h"
+#include "mcu_periph/gpio.h"
 
 #ifndef SENSOR_DATA_SPI_LINK_DEVICE
 #define SENSOR_DATA_SPI_LINK_DEVICE spi1
@@ -45,6 +46,8 @@ static void calculate_checksum(uint8_t* buffer, uint16_t length);
 uint8_t input[sizeof(sensor_data_t)];
 
 
+#define USE_DEBUG_DATA
+
 void sensor_data_spi_init(void)
 {
     spi_link_sensors_init();
@@ -54,6 +57,9 @@ void sensor_data_spi_init(void)
     //    {
     //        sensor_data.test_buffer[i] =(uint8_t) i;
     //    }
+
+    gpio_setup_output(GPIO_BANK_UART5_TX, GPIO_UART5_TX);
+
 }
 
 
@@ -73,8 +79,10 @@ static void spi_link_sensors_init(void) {
 void sensor_data_spi_periodic(void)
 {
     if (sensors_spi_link_ready) {
+        gpio_set(GPIO_BANK_UART5_TX, GPIO_UART5_TX);
         LED_TOGGLE(5);
         sensors_spi_link_ready = FALSE;
+#ifndef USE_DEBUG_DATA
         sensor_data.gyro_p     = imu.gyro.p;
         sensor_data.gyro_q     = imu.gyro.q;
         sensor_data.gyro_r     = imu.gyro.r;
@@ -87,6 +95,20 @@ void sensor_data_spi_periodic(void)
         sensor_data.airspeed_raw = airspeed_ets_raw;
         sensor_data.airspeed_offset = airspeed_ets_offset;
         sensor_data.airspeed_scaled = airspeed_ets;
+#else
+        sensor_data.acc_x      = 1;
+        sensor_data.acc_y      = 2;
+        sensor_data.acc_z      = 3;
+        sensor_data.gyro_p     = 4;
+        sensor_data.gyro_q     = 5;
+        sensor_data.gyro_r     = 6;
+        sensor_data.mag_x      = 7;
+        sensor_data.mag_y      = 8;
+        sensor_data.mag_z      = 9;
+        sensor_data.airspeed_raw = 10;
+        sensor_data.airspeed_offset = 11;
+        sensor_data.airspeed_scaled = 12.12f;
+#endif
         calculate_checksum((uint8_t*) &sensor_data, sizeof(sensor_data_t)-2);
         spi_slave_register(&SENSOR_DATA_SPI_LINK_DEVICE, &sensors_spi_link_transaction);
     }
@@ -101,7 +123,7 @@ static void calculate_checksum(uint8_t* buffer, uint16_t length)
     for (uint32_t idx = 0; idx < length; idx++)
     {
         sensor_data.checksum1 += buffer[idx];
-        sensor_data.checksum2;
+        sensor_data.checksum2 += sensor_data.checksum1;
     }
 }
 
@@ -110,4 +132,5 @@ static void calculate_checksum(uint8_t* buffer, uint16_t length)
 
 static void sensors_spi_link_trans_cb( struct spi_transaction *trans __attribute__ ((unused)) ) {
     sensors_spi_link_ready = TRUE;
+    gpio_clear(GPIO_BANK_UART5_TX, GPIO_UART5_TX);
 }
