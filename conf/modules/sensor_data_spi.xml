@@ -3,14 +3,14 @@
 <module name="sensor_data_spi">
   <doc>
     <description>Send sensor data over SPI</description>
-    <define name="SENSOR_DATA_FREQUENCY" value="1" />
+    <configure name="SENSOR_DATA_FREQUENCY" value="200" />
   </doc>
     <depends>airspeed_ets</depends>
   <header>
     <file name="sensor_data_spi.h"/>
   </header>
   <init fun="sensor_data_spi_init()"/>
-  <periodic fun="sensor_data_spi_periodic()" freq=SENSOR_DATA_FREQUENCY/>
+  <periodic fun="sensor_data_spi_periodic()" freq="$(SENSOR_DATA_FREQUENCY)"/>
   <makefile>
   <define name="SPI_MASTER" value="1" />
   <define name="SPI_SLAVE" value="1" />
