@@ -28,6 +28,7 @@
 #include "mcu_periph/sys_time.h"
 #include "mcu_periph/spi.h"
 #include "peripherals/hmc58xx_regs.h"
+#include "modules/imu_highwind/imu_highwind.h"
 
 /* defaults suitable for Lisa */
 #ifndef ASPIRIN_2_SPI_SLAVE_IDX
@@ -163,6 +164,8 @@ void imu_aspirin2_event(void)
 {
   mpu60x0_spi_event(&imu_aspirin2.mpu);
   if (imu_aspirin2.mpu.data_available) {
+
+    uint32_t ticks_event = sys_time.nb_tick;
     /* HMC5883 has xzy order of axes in returned data */
     struct Int32Vect3 mag;
     mag.x = Int16FromBuf(imu_aspirin2.mpu.data_ext, 0);
@@ -221,6 +224,14 @@ void imu_aspirin2_event(void)
 #endif
 #endif
 #endif
+
+    imu_highwind_ptr->ticks = ticks_event;
+    imu_highwind_ptr->sequence_number = imu_highwind_sequence_number;
+    RATES_COPY(imu_highwind_ptr->gyro,imu.gyro_unscaled);
+    VECT3_COPY(imu_highwind_ptr->accel,imu.accel_unscaled);
+    VECT3_COPY(imu_highwind_ptr->mag,imu.mag_unscaled);
+
+    imu_highwind_update();
 
     imu_aspirin2.mpu.data_available = FALSE;
     imu_aspirin2.gyro_valid = TRUE;
