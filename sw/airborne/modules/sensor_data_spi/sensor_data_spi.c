@@ -23,8 +23,10 @@
 #include "modules/sensor_data_spi/sensor_data_spi.h"
 #include "modules/sensors/airspeed_ets.h"
 
+
 #include "subsystems/imu.h"
 #include "mcu_periph/spi.h"
+#include "mcu_periph/sys_time.h"
 #include "led.h"
 #include "mcu_periph/gpio.h"
 
@@ -53,7 +55,7 @@ uint8_t input[sizeof(sensor_data_t)];
 void sensor_data_spi_init(void)
 {
     spi_link_sensors_init();
-    sensor_data.sequence_number = 0;
+    sensor_data.header.sequence_number = 0;
     //    sensor_data.test_buffer[0] =255;
     //    for (uint32_t i = 1 ; i < sizeof(sensor_data.test_buffer) ; i++ )
     //    {
@@ -116,7 +118,8 @@ void sensor_data_spi_periodic(void)
         calculate_checksum((uint8_t*) &sensor_data, sizeof(sensor_data_t)-2);
         spi_slave_register(&SENSOR_DATA_SPI_LINK_DEVICE, &sensors_spi_link_transaction);
     }
-    sensor_data.sequence_number++;
+    sensor_data.header.sequence_number++;
+    sensor_data.header.ticks = sys_time.nb_tick;
 }
 
 
@@ -125,25 +128,25 @@ static void getIMUData()
 {
     for (uint16_t i = 0; i < IMU_HIGHWIND_ARRAY_SIZE; i++)
     {
-        sensor_data.imu[i].sequence_number = imu_highwind_array[i].sequence_number;
-        sensor_data.imu[i].ticks = imu_highwind_array[i].ticks;
-        sensor_data.imu[i].acc_x = imu_highwind_array[i].accel.x;
-        sensor_data.imu[i].acc_y = imu_highwind_array[i].accel.y;
-        sensor_data.imu[i].acc_z = imu_highwind_array[i].accel.z;
-        sensor_data.imu[i].gyro_p = imu_highwind_array[i].gyro.p;
-        sensor_data.imu[i].gyro_q = imu_highwind_array[i].gyro.q;
-        sensor_data.imu[i].gyro_r = imu_highwind_array[i].gyro.r;
-        sensor_data.imu[i].mag_x = imu_highwind_array[i].mag.x;
-        sensor_data.imu[i].mag_y = imu_highwind_array[i].mag.y;
-        sensor_data.imu[i].mag_z = imu_highwind_array[i].mag.z;
+        sensor_data.imu[i].header.sequence_number = imu_highwind_array[i].sequence_number;
+        sensor_data.imu[i].header.ticks = imu_highwind_array[i].ticks;
+        sensor_data.imu[i].accel.x = imu_highwind_array[i].accel.x;
+        sensor_data.imu[i].accel.y = imu_highwind_array[i].accel.y;
+        sensor_data.imu[i].accel.z = imu_highwind_array[i].accel.z;
+        sensor_data.imu[i].gyro.p = imu_highwind_array[i].gyro.p;
+        sensor_data.imu[i].gyro.q = imu_highwind_array[i].gyro.q;
+        sensor_data.imu[i].gyro.r = imu_highwind_array[i].gyro.r;
+        sensor_data.imu[i].mag.x = imu_highwind_array[i].mag.x;
+        sensor_data.imu[i].mag.y = imu_highwind_array[i].mag.y;
+        sensor_data.imu[i].mag.z = imu_highwind_array[i].mag.z;
     }
     imu_highwind_reset();
 }
 
 static void getAirspeedData()
 {
-    sensor_data.airspeed.ticks = 0;
-    sensor_data.airspeed.sequence_number = 1;
+    sensor_data.airspeed.header.ticks = 0;
+    sensor_data.airspeed.header.sequence_number = 1;
     // sensor_data.airspeed.raw = airspeed_ets_raw;
     // sensor_data.airspeed.offset = airspeed_ets_offset;
     // sensor_data.airspeed.scaled = airspeed_ets;
@@ -155,13 +158,13 @@ static void getAirspeedData()
 
 static void calculate_checksum(uint8_t* buffer, uint16_t length)
 {
-     sensor_data.checksum1 = 0;
-     sensor_data.checksum2 = 0;
+     sensor_data.footer.checksum1 = 0;
+     sensor_data.footer.checksum2 = 0;
 
     for (uint32_t idx = 0; idx < length; idx++)
     {
-        sensor_data.checksum1 += buffer[idx];
-        sensor_data.checksum2 += sensor_data.checksum1;
+        sensor_data.footer.checksum1 += buffer[idx];
+        sensor_data.footer.checksum2 += sensor_data.footer.checksum1;
     }
 }
 
