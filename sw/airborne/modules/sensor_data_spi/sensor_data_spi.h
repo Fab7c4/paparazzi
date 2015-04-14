@@ -32,7 +32,7 @@ extern void sensor_data_spi_periodic(void);
 
 
 #define PACKED __attribute__((__packed__))
-#define NUMBER_OF_IMU_DATA_PACKETS IMU_HIGHWIND_ARRAY_SIZE
+#define NUMBER_OF_IMU_DATA_PACKETS 10
 
 ///********************************************************************
 /// GENERAL SUBMESSAGE DEFINITIONS
@@ -41,8 +41,7 @@ extern void sensor_data_spi_periodic(void);
 
 /// Footer definition
 typedef struct PACKED{
-    uint8_t checksum1;                  // Incremented sequence number
-    uint8_t checksum2;                  // Number of ticks for timing
+    uint32_t crc32;                  // CRC32
 } sensor_data_footer_t;
 
 /// Header definition
@@ -83,7 +82,7 @@ typedef struct PACKED{
     sensor_data_header_t header;
     uint16_t raw;
     uint16_t offset;
-    float scaled;
+    uint32_t scaled;
 }sensor_data_airspeed_t ;
 
 
@@ -93,10 +92,15 @@ typedef struct PACKED{
 
 typedef struct PACKED{
     sensor_data_header_t header;
-    sensor_data_imu_t imu[IMU_HIGHWIND_ARRAY_SIZE];
+    sensor_data_imu_t imu[NUMBER_OF_IMU_DATA_PACKETS];
     sensor_data_airspeed_t airspeed;
     sensor_data_footer_t footer;
 }sensor_data_t ;
+
+typedef struct PACKED{
+    sensor_data_header_t header;
+    sensor_data_footer_t footer;
+}test_t ;
 
 
 #endif

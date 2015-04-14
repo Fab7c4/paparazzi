@@ -34,10 +34,18 @@
 #define SENSOR_DATA_SPI_LINK_DEVICE spi1
 #endif
 
-sensor_data_t sensor_data;
+//#define USE_DEBUG_DATA
+
+#ifndef USE_DEBUG_DATA
+  sensor_data_t sensor_data;
+  #else
+  test_t sensor_data;
+  #endif
 struct spi_transaction sensors_spi_link_transaction;
 
 static volatile bool_t sensors_spi_link_ready = TRUE;
+
+uint8_t test[12];
 
 /// Declaration of methods
 static void sensors_spi_link_trans_cb( struct spi_transaction *trans );
@@ -47,20 +55,14 @@ static void getAirspeedData(void);
 static void calculate_checksum(uint8_t* buffer, uint16_t length);
 
 
-uint8_t input[sizeof(sensor_data_t)];
+uint8_t input[sizeof(sensor_data)];
 
 
-#define USE_DEBUG_DATA
 
 void sensor_data_spi_init(void)
 {
     spi_link_sensors_init();
     sensor_data.header.sequence_number = 0;
-    //    sensor_data.test_buffer[0] =255;
-    //    for (uint32_t i = 1 ; i < sizeof(sensor_data.test_buffer) ; i++ )
-    //    {
-    //        sensor_data.test_buffer[i] =(uint8_t) i;
-    //    }
 
     gpio_setup_output(GPIO_BANK_UART5_TX, GPIO_UART5_TX);
 
@@ -70,6 +72,12 @@ void sensor_data_spi_init(void)
 
 
 static void spi_link_sensors_init(void) {
+
+
+  for (int i = 0 ; i < 12; i++)
+  {
+    test[i] = i;
+  }
 
     sensors_spi_link_transaction.cpol          = SPICpolIdleHigh;
     sensors_spi_link_transaction.cpha          = SPICphaEdge2;
@@ -85,50 +93,25 @@ static void spi_link_sensors_init(void) {
 void sensor_data_spi_periodic(void)
 {
     if (sensors_spi_link_ready) {
+        sensor_data.header.sequence_number = 0x12345678;
+        sensor_data.header.ticks = 0xaaaaaaaa;
+        sensors_spi_link_ready = FALSE;
         gpio_set(GPIO_BANK_UART5_TX, GPIO_UART5_TX);
         LED_TOGGLE(5);
-        sensors_spi_link_ready = FALSE;
+        gpio_clear(GPIO_BANK_UART5_TX, GPIO_UART5_TX);
         getIMUData();
         getAirspeedData();
-// #ifndef USE_DEBUG_DATA
-//         sensor_data.gyro_p     = imu.gyro.p;
-//         sensor_data.gyro_q     = imu.gyro.q;
-//         sensor_data.gyro_r     = imu.gyro.r;
-//         sensor_data.acc_x      = imu.accel.x;
-//         sensor_data.acc_y      = imu.accel.y;
-//         sensor_data.acc_z      = imu.accel.z;
-//         sensor_data.mag_x      = imu.mag.x;
-//         sensor_data.mag_y      = imu.mag.y;
-//         sensor_data.mag_z      = imu.mag.z;
-//         sensor_data.airspeed_raw = airspeed_ets_raw;
-//         sensor_data.airspeed_offset = airspeed_ets_offset;
-//         sensor_data.airspeed_scaled = airspeed_ets;
-// #else
-//         sensor_data.acc_x      = 1;
-//         sensor_data.acc_y      = 2;
-//         sensor_data.acc_z      = 3;
-//         sensor_data.gyro_p     = 4;
-//         sensor_data.gyro_q     = 5;
-//         sensor_data.gyro_r     = 6;
-//         sensor_data.mag_x      = 7;
-//         sensor_data.mag_y      = 8;
-//         sensor_data.mag_z      = 9;
-//         sensor_data.airspeed_raw = 10;
-//         sensor_data.airspeed_offset = 11;
-//         sensor_data.airspeed_scaled = 12.12f;
-// #endif
-        calculate_checksum((uint8_t*) &sensor_data, sizeof(sensor_data_t)-2);
+        calculate_checksum((uint8_t*) &sensor_data, sizeof(sensor_data)-4);
         spi_slave_register(&SENSOR_DATA_SPI_LINK_DEVICE, &sensors_spi_link_transaction);
     }
-    sensor_data.header.sequence_number++;
-    sensor_data.header.ticks = sys_time.nb_tick;
+
 }
 
 
 
 static void getIMUData()
 {
-    for (uint16_t i = 0; i < IMU_HIGHWIND_ARRAY_SIZE; i++)
+    for (uint16_t i = 0; i < NUMBER_OF_IMU_DATA_PACKETS; i++)
     {
         sensor_data.imu[i].header.sequence_number = imu_highwind_array[i].sequence_number;
         sensor_data.imu[i].header.ticks = imu_highwind_array[i].ticks;
@@ -142,19 +125,37 @@ static void getIMUData()
         sensor_data.imu[i].mag.y = imu_highwind_array[i].mag.y;
         sensor_data.imu[i].mag.z = imu_highwind_array[i].mag.z;
     }
+    // int32_t testval = 1;
+    // for (uint16_t i = 0; i < NUMBER_OF_IMU_DATA_PACKETS; i++)
+    // {
+    //     sensor_data.imu[i].header.sequence_number = testval++;
+    //     sensor_data.imu[i].header.ticks = testval++;
+    //     sensor_data.imu[i].accel.x = testval++;
+    //     sensor_data.imu[i].accel.y = testval++;
+    //     sensor_data.imu[i].accel.z = testval++;
+    //     sensor_data.imu[i].gyro.p = testval++;
+    //     sensor_data.imu[i].gyro.q = testval++;
+    //     sensor_data.imu[i].gyro.r = testval++;
+    //     sensor_data.imu[i].mag.x = testval++;
+    //     sensor_data.imu[i].mag.y = testval++;
+    //     sensor_data.imu[i].mag.z = testval++;
+    // }
+
     imu_highwind_reset();
 }
 
 static void getAirspeedData()
 {
-    sensor_data.airspeed.header.ticks = 0;
-    sensor_data.airspeed.header.sequence_number = 1;
+  #ifndef USE_DEBUG_DATA
+    sensor_data.airspeed.header.ticks = 1;
+    sensor_data.airspeed.header.sequence_number = 2;
     // sensor_data.airspeed.raw = airspeed_ets_raw;
     // sensor_data.airspeed.offset = airspeed_ets_offset;
     // sensor_data.airspeed.scaled = airspeed_ets;
-    sensor_data.airspeed.raw = 2;
-    sensor_data.airspeed.offset = 3;
-    sensor_data.airspeed.scaled = 4;
+    sensor_data.airspeed.raw = 3;
+    sensor_data.airspeed.offset = 4;
+    sensor_data.airspeed.scaled = 5;
+    #endif
 
 }
 
