@@ -22,8 +22,8 @@
 
 #include "modules/sensor_data_spi/sensor_data_spi.h"
 #include "modules/sensors/airspeed_ets.h"
-
-
+#include "libopencm3/stm32/rcc.h"
+#include "libopencm3/stm32/crc.h"
 #include "subsystems/imu.h"
 #include "mcu_periph/spi.h"
 #include "mcu_periph/sys_time.h"
@@ -63,6 +63,8 @@ void sensor_data_spi_init(void)
     //    }
 
     gpio_setup_output(GPIO_BANK_UART5_TX, GPIO_UART5_TX);
+
+    rcc_periph_clock_enable(RCC_CRC);
 
 }
 
@@ -158,14 +160,50 @@ static void getAirspeedData()
 
 static void calculate_checksum(uint8_t* buffer, uint16_t length)
 {
-     sensor_data.footer.checksum1 = 0;
-     sensor_data.footer.checksum2 = 0;
+    //OLD PAPARAZZI CHECKSUM USED FOR TELEMETRY
+    //  sensor_data.footer.checksum1 = 0;
+    //  sensor_data.footer.checksum2 = 0;
+    //
+    // for (uint32_t idx = 0; idx < length; idx++)
+    // {
+    //     sensor_data.footer.checksum1 += buffer[idx];
+    //     sensor_data.footer.checksum2 += sensor_data.footer.checksum1;
+    // }
+      uint32_t i;
 
-    for (uint32_t idx = 0; idx < length; idx++)
-    {
-        sensor_data.footer.checksum1 += buffer[idx];
-        sensor_data.footer.checksum2 += sensor_data.footer.checksum1;
-    }
+      /* reset crc */
+      CRC_CR = CRC_CR_RESET;
+
+        /* calc in 8bit chunks */
+        for (i = 0; i < (length & ~3); i += 4) {
+          CRC_DR = (*(uint8_t *)(buffer + i)) |
+                   (*(uint8_t *)(buffer + i + 1)) << 8 |
+                   (*(uint8_t *)(buffer + i + 2)) << 16 |
+                   (*(uint8_t *)(buffer + i + 3)) << 24;
+        }
+
+
+      /* remaining bytes */
+      switch (length % 4) {
+        case 1:
+          CRC_DR = *(uint8_t *)(buffer + i);
+          LED_TOGGLE(3);
+          break;
+        case 2:
+          CRC_DR = (*(uint8_t *)(buffer + i)) |
+                   (*(uint8_t *)(buffer + i + 1)) << 8;
+                   LED_TOGGLE(4);
+          break;
+        case 3:
+          CRC_DR = (*(uint8_t *)(buffer + i)) |
+                   (*(uint8_t *)(buffer + i + 1)) << 8 |
+                   (*(uint8_t *)(buffer + i + 2)) << 16;
+                   LED_TOGGLE(5);
+          break;
+        default:
+          break;
+      }
+      sensor_data.footer.crc32 = CRC_DR;
 }
 
 
