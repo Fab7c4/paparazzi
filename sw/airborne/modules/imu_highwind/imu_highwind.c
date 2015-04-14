@@ -51,6 +51,7 @@ void imu_highwind_reset() {
 }
 
 void imu_highwind_update() {
+    imu_highwind_sequence_number++;
     current_imu_highwind_array_idx++;
     if (current_imu_highwind_array_idx > IMU_HIGHWIND_ARRAY_SIZE-1)
     {
