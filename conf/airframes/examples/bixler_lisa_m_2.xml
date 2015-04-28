@@ -22,6 +22,7 @@
     <target name="sim" 			board="pc"/>
 
     <define name="USE_MAGNETOMETER" value="FALSE"/>
+	
 
     <subsystem name="radio_control" type="ppm"/>
     <subsystem name="telemetry" type="transparent"/>
@@ -36,6 +37,7 @@
   <modules>
     <load name="imu_highwind.xml"/>
     <load name="sensor_data_spi.xml"/>
+    <load name="high_precision_timer_highwind.xml"/>
   </modules>
 
   <!-- commands section -->
