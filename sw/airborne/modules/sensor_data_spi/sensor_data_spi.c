@@ -21,6 +21,7 @@
  */
 
 #include "modules/sensor_data_spi/sensor_data_spi.h"
+#include "modules/high_precision_timer_highwind/high_precision_timer_highwind.h"
 #include "modules/sensors/airspeed_ets.h"
 #include "libopencm3/stm32/rcc.h"
 #include "libopencm3/stm32/crc.h"
@@ -94,7 +95,8 @@ void sensor_data_spi_periodic(void)
 {
     if (sensors_spi_link_ready) {
         sensor_data.header.sequence_number = 0x12345678;
-        sensor_data.header.ticks = 0xaaaaaaaa;
+        sensor_data.header.ticks = high_precision_timer_highwind_get_tics() ;
+        sensor_data.header.incremented = high_precision_timer_highwind_get_seconds() ;
         sensors_spi_link_ready = FALSE;
         gpio_set(GPIO_BANK_UART5_TX, GPIO_UART5_TX);
         LED_TOGGLE(5);
