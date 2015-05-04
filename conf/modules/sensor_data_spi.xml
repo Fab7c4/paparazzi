@@ -5,7 +5,7 @@
     <description>Send sensor data over SPI</description>
     <configure name="SENSOR_DATA_FREQUENCY" value="200" />
   </doc>
-    <depends>airspeed_ets,imu_highwind</depends>
+    <depends>airspeed_ets,imu_highwind,high_precision_timer_highwind</depends>
   <header>
     <file name="sensor_data_spi.h"/>
   </header>
