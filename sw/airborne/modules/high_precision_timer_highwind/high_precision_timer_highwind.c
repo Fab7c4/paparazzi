@@ -84,6 +84,7 @@ void high_precision_timer_highwind_init(void) {
 }
 
 uint32_t overflowCounter = 0;
+uint32_t numSeconds = 0;
 
 #ifdef STM32F1
 void tim7_isr(void) {
@@ -98,16 +99,22 @@ uint32_t high_precision_timer_highwind_get_tics(void) {
 	return overflowCounter * 0xFFFF + timer_get_counter(TIM7);
 }
 
-void high_precision_timer_highwind_periodic(void) {
+inline uint32_t high_precision_timer_highwind_get_seconds(void) {
+	return numSeconds;
 }
 
-void high_precision_timer_highwind_reset() {
+void high_precision_timer_highwind_periodic(void) {
+	high_precision_timer_highwind_next_second();
+}
+
+void high_precision_timer_highwind_next_second() {
 	timer_set_counter(TIM7, 0);
 	overflowCounter = 0;
+	++numSeconds;
 }
 
-void high_precision_timer_highwind_gps_pulse_interupt() {
-	high_precision_timer_highwind_reset();
+void high_precision_timer_highwind_gps_pulse_interrupt() {
+	high_precision_timer_highwind_next_second();
 }
 
 

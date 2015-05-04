@@ -30,9 +30,10 @@ extern unsigned long millis;
 
 extern void high_precision_timer_highwind_init(void);
 extern void high_precision_timer_highwind_periodic(void);
-extern void high_precision_timer_highwind_reset(void);
+extern void high_precision_timer_highwind_next_second(void);
 extern uint32_t high_precision_timer_highwind_get_tics(void);
-extern void high_precision_timer_highwind_gps_pulse_interupt(void);
+extern uint32_t high_precision_timer_highwind_get_seconds(void);
+extern void high_precision_timer_highwind_gps_pulse_interrupt(void);
 
 #endif
 
