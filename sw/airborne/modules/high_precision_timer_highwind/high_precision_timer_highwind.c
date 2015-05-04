@@ -46,7 +46,7 @@
 #define GPS_HEARTBEAT_USER_isr exti0_isr
 #define GPS_HEARTBEAT_USER_NVIC NVIC_EXTI0_IRQ
 
-extern uint32_t high_precision_timer_ticks_per_sec = 0;
+uint32_t high_precision_timer_ticks_per_sec;
 
 void high_precision_timer_highwind_init(void) {
     rcc_periph_clock_enable(RCC_TIM7);
