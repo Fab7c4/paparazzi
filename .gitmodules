@@ -13,3 +13,6 @@
 [submodule "sw/ext/chibios"]
 	path = sw/ext/chibios
 	url = https://github.com/mabl/ChibiOS.git
+[submodule "sw/ext/nanopb"]
+	path = sw/ext/nanopb
+	url = https://code.google.com/p/nanopb/
