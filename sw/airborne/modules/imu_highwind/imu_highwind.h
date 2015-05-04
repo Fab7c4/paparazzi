@@ -35,6 +35,7 @@
 
 typedef struct {
     uint32_t ticks;
+    uint32_t incremented;
     uint32_t sequence_number;
     struct Int32Rates gyro;             ///< gyroscope measurements in rad/s in BFP with #INT32_RATE_FRAC
     struct Int32Vect3 accel;            ///< accelerometer measurements in m/s^2 in BFP with #INT32_ACCEL_FRAC
