@@ -228,6 +228,7 @@ void imu_aspirin2_event(void)
 #endif
 
     imu_highwind_ptr->ticks = ticks_event;
+    imu_highwind_ptr->type = IMU_TYPE_PLANE;
     imu_highwind_ptr->incremented = incremented;
     imu_highwind_ptr->sequence_number = imu_highwind_sequence_number;
     RATES_COPY(imu_highwind_ptr->gyro,imu.gyro_unscaled);
