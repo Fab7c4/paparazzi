@@ -1,0 +1,23 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="imu_mpu9150_highwind">
+  <doc>
+    <description>IMU MPU9150</description>
+    <configure name="IMU_MPU9250_I2C_DEV" value="i2c2" description="I2C device to use (e.g. i2c1)"/>
+    <define name="IMU_MPU9250_ADDR" value="MPU9250_ADDR|MPU9250_ADDR_ALT" description="Use regular or alternate I2C address"/>
+  </doc>
+  <header>
+    <file name="imu_mpu9150_highwind.h"/>
+  </header>
+  <init fun="imu_mpu9150_highwind_init()"/>
+  <periodic fun="imu_mpu9150_highwind_periodic()"/>
+  <event fun="imu_mpu9150_highwind_event()"/>
+  <makefile>
+    <file name="imu_mpu9150_highwind.c"/>
+    <file name="mpu9250.c" dir="peripherals"/>
+    <file name="mpu9250_i2c.c" dir="peripherals"/>
+    <file name="ak8963.c" dir="peripherals"/>
+    <define name="USE_I2C2"/>
+    <define name="IMU_MPU9250_I2C_DEV" value="i2c2"/>
+  </makefile>
+  </module>
