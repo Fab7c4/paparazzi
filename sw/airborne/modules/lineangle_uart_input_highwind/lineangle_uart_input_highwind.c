@@ -24,7 +24,7 @@
  */
 
 #include "modules/lineangle_uart_input_highwind/lineangle_uart_input_highwind.h"
-
+#include "modules/sensor_data_spi/sensor_data_spi.h"
 #include "mcu_periph/uart.h"
 
 #define LA_STARTBYTE 'X'
@@ -39,6 +39,7 @@ void lineangle_uart_input_highwind_init() {
 }
 
 uint8_t numStartbytesRead = 0;
+sensor_data_lineangle_t latestLineangleReading;
 
 void lineangle_uart_input_highwind_periodic() {
 
@@ -49,13 +50,17 @@ void lineangle_uart_input_highwind_periodic() {
 			numStartbytesRead = 0;
 
 	if(numStartbytesRead == LA_NUM_STARTBYTES)
-		if(uart_char_available(&LA_UART) >= 55)
-			readLineanglePackage();
-
+		readLineanglePackage();
 }
 
 void readLineanglePackage() {
-
+	if(uart_char_available(&LA_UART) >= sizeof(latestLineangleReading)) {
+		char* buf = (char*) &latestLineangleReading;
+		for(size_t i = 0; i < sizeof(latestLineangleReading); ++i) {
+			buf[i] = uart_getch(&LA_UART);
+		}
+		numStartbytesRead = 0;
+	}
 }
 
 

@@ -87,6 +87,13 @@ typedef struct PACKED{
 }sensor_data_airspeed_t ;
 
 
+typedef struct PACKED {
+  sensor_data_header_t header;
+  uint16_t raw_angle;
+}
+sensor_data_lineangle_t ;
+
+
 //********************************************************************
 /// COMPLETE MESSAGE DEFINITION
 ///********************************************************************
