@@ -8,7 +8,7 @@
     <file name="high_precision_timer_highwind.h"/>
   </header>
   <init fun="high_precision_timer_highwind_init()"/>
-  <periodic fun="high_precision_timer_highwind_periodic()" freq="1" autorun="TRUE"/>
+  <periodic fun="high_precision_timer_highwind_periodic()" freq="200" autorun="TRUE"/>
   <makefile>
     <file name="high_precision_timer_highwind.c"/>
   </makefile>

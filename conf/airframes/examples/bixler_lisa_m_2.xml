@@ -38,6 +38,7 @@
     <load name="imu_highwind.xml"/>
     <load name="sensor_data_spi.xml"/>
     <load name="high_precision_timer_highwind.xml"/>
+    <load name="lineangle_uart_input_highwind.xml"/>
   </modules>
 
   <!-- commands section -->
