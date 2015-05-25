@@ -24,39 +24,43 @@
  */
 
 #include "modules/lineangle_uart_input_highwind/lineangle_uart_input_highwind.h"
-#include "modules/sensor_data_spi/sensor_data_spi.h"
 #include "mcu_periph/uart.h"
 
-#define LA_STARTBYTE 'X'
+#define LA_STARTBYTE 42
 #define LA_NUM_STARTBYTES 3
 
 
 void lineangle_uart_input_highwind_init() {
 	uart_periph_init(&LA_UART);
 	uart_periph_set_mode(&LA_UART, false, true, false);
-	//TODO: Set parity bits to match arduino
-	//uart_periph_set_bits_stop_parity(&HS_LOG_UART, 8, 1, 0);
+	uart_periph_set_bits_stop_parity(&LA_UART, UBITS_8, USTOP_1, UPARITY_NO);
 }
 
 uint8_t numStartbytesRead = 0;
-sensor_data_lineangle_t latestLineangleReading;
+sensor_data_lineangle_t latestLineangleReading1;
+sensor_data_lineangle_t latestLineangleReading2;
 
 void lineangle_uart_input_highwind_periodic() {
 
-	while(uart_char_available(&LA_UART) > 0 && numStartbytesRead != LA_NUM_STARTBYTES)
-		if(uart_getch(&LA_UART) == LA_STARTBYTE)
+
+	while(uart_char_available(&LA_UART) > 0 && numStartbytesRead != LA_NUM_STARTBYTES) {
+		uint8_t inchar = uart_getch(&LA_UART);
+		if(inchar == LA_STARTBYTE)
 			++numStartbytesRead;
 		else
 			numStartbytesRead = 0;
+	}
 
-	if(numStartbytesRead == LA_NUM_STARTBYTES)
-		readLineanglePackage();
+	if(numStartbytesRead == LA_NUM_STARTBYTES) {
+		readLineanglePackage(&latestLineangleReading1);
+		int i = 0;
+	}
 }
 
-void readLineanglePackage() {
-	if(uart_char_available(&LA_UART) >= sizeof(latestLineangleReading)) {
-		char* buf = (char*) &latestLineangleReading;
-		for(size_t i = 0; i < sizeof(latestLineangleReading); ++i) {
+void readLineanglePackage(sensor_data_lineangle_t* out) {
+	if(uart_char_available(&LA_UART) >= sizeof(latestLineangleReading1)) {
+		char* buf = (char*) out;
+		for(size_t i = 0; i < sizeof(latestLineangleReading1); ++i) {
 			buf[i] = uart_getch(&LA_UART);
 		}
 		numStartbytesRead = 0;

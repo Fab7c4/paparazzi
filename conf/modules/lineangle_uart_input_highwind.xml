@@ -13,13 +13,13 @@
   <makefile>
     <file name="lineangle_uart_input_highwind.c"/>
     <raw>
-      LA_UART ?= uart1
+      LA_UART ?= uart5
       LA_UART_LOWER=$(shell echo $(LA_UART) | tr A-Z a-z)
       LA_UART_UPPER=$(shell echo $(LA_UART) | tr a-z A-Z)
     </raw>
     <define name="LA_UART" value="$(LA_UART_LOWER)"/>
     <define name="USE_$(LA_UART_UPPER)"/>
-    <define name="$(LA_UART_UPPER)_BAUD" value="B115200"/>
+    <define name="$(LA_UART_UPPER)_BAUD" value="B19200"/>
   </makefile>
 </module>
 

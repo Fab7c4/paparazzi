@@ -46,9 +46,9 @@ typedef struct PACKED{
 
 /// Header definition
 typedef struct PACKED{
-    uint32_t sequence_number;           // Incremented sequence number
-    uint32_t ticks;                     // Number of ticks for timing
-    uint32_t incremented;                     // Number of ticks for timing
+    uint32_t sequence_number;  // This number is incremented with each new header
+    uint32_t seconds; // Seconds elapsed since start of device
+    uint32_t ticks; // Ticks elapsed since last second
 } sensor_data_header_t;
 
 /// Datatype for VECTOR

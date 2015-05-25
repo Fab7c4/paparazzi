@@ -25,11 +25,13 @@
 
 #ifndef LINEANGLE_UART_INPUT_HIGHWIND_H
 #define LINEANGLE_UART_INPUT_HIGHWIND_H
+#include "modules/sensor_data_spi/sensor_data_spi.h"
+
 
 extern void lineangle_uart_input_highwind_init();
 extern void lineangle_uart_input_highwind_periodic();
 
-void readLineanglePackage();
+void readLineanglePackage(sensor_data_lineangle_t* out);
 
 #endif
 

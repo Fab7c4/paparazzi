@@ -96,7 +96,7 @@ void sensor_data_spi_periodic(void)
     if (sensors_spi_link_ready) {
         sensor_data.header.sequence_number = 0x12345678;
         sensor_data.header.ticks = high_precision_timer_highwind_get_tics() ;
-        sensor_data.header.incremented = high_precision_timer_highwind_get_seconds() ;
+        sensor_data.header.seconds = high_precision_timer_highwind_get_seconds() ;
         sensors_spi_link_ready = FALSE;
         gpio_set(GPIO_BANK_UART5_TX, GPIO_UART5_TX);
         LED_TOGGLE(5);
