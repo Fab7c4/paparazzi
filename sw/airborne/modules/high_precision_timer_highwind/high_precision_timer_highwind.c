@@ -35,6 +35,7 @@
 #include "modules/high_precision_timer_highwind/high_precision_timer_highwind.h"
 #include "mcu_arch.h"
 #include "mcu_periph/sys_time.h"
+#include "mcu_periph/gpio.h"
 
 
 #define HIGH_PRECISION_TIMER_PRESCALE 9
@@ -72,7 +73,7 @@ void high_precision_timer_highwind_init(void) {
     timer_enable_counter(TIM7);
 
     //Store the ticks per second so they can be sent out together with the ticks
-    high_precision_timer_ticks_per_sec = timer_get_frequency(TIM7)/HIGH_PRECISION_TIMER_PRESCALE;
+    //high_precision_timer_ticks_per_sec = timer_get_frequency(TIM7)/HIGH_PRECISION_TIMER_PRESCALE;
 
 	//setup the interrupt for the 1 second pulse coming from the gps (Does not compile yet)
 //	nvic_enable_irq(GPS_HEARTBEAT_USER_NVIC);
@@ -81,6 +82,8 @@ void high_precision_timer_highwind_init(void) {
 //	exti_select_source(GPS_HEARTBEAT_USER_EXTI, GPS_HEARTBEAT_USER_PORT);
 //	exti_set_trigger(GPS_HEARTBEAT_USER_EXTI, EXTI_TRIGGER_RISING);
 //	exti_enable_request(GPS_HEARTBEAT_USER_EXTI);
+
+    gpio_setup_input(GPIOA, GPIO8);
 }
 
 uint32_t overflowCounter = 0;
@@ -104,7 +107,12 @@ inline uint32_t high_precision_timer_highwind_get_seconds(void) {
 }
 
 void high_precision_timer_highwind_periodic(void) {
-	high_precision_timer_highwind_next_second();
+	//high_precision_timer_highwind_next_second();
+	uint32_t p = gpio_port_read(GPIOA);
+	if(gpio_port_read(GPIOA)) {
+		high_precision_timer_highwind_next_second();
+	}
+
 }
 
 void high_precision_timer_highwind_next_second() {

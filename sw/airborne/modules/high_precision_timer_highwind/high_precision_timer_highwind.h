@@ -23,6 +23,10 @@
  * 
  */
 
+/**
+ * Remark: I think this should be a subsystem because it is highly platform dependent!
+ */
+
 #ifndef HIGH_PRECISION_TIMER_HIGHWIND_H
 #define HIGH_PRECISION_TIMER_HIGHWIND_H
 
