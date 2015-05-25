@@ -33,8 +33,8 @@
   <event fun="AirspeedEtsEvent()"/>
 
   <makefile>
+    <define name="USE_I2C2"/>
     <file name="airspeed_ets.c"/>
   </makefile>
 
 </module>
-

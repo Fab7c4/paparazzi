@@ -39,6 +39,13 @@
     <load name="sensor_data_spi.xml"/>
     <load name="high_precision_timer_highwind.xml"/>
     <load name="lineangle_uart_input_highwind.xml"/>
+    <load name="imu_mpu9150_highwind.xml"/>
+    <!-- <load name="airspeed_ets.xml">
+	       Applies if another I2C interface than IC20 is used 
+	      <define name="AIRSPEED_ETS_SCALE"   value="1.44"/> 
+	      <define name="AIRSPEED_ETS_OFFSET"  value="50"/>
+	      <define name="AIRSPEED_ETS_I2C_DEV" value="i2c2"/> 
+    </load> -->
   </modules>
 
   <!-- commands section -->

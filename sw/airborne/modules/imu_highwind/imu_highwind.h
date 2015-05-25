@@ -33,8 +33,13 @@
 #define IMU_HIGHWIND_ARRAY_SIZE 20
 #endif
 
+#define IMU_TYPE_PLANE  1
+#define IMU_TYPE_ARM  2
+
 typedef struct {
+    uint8_t type;
     uint32_t ticks;
+    uint32_t incremented;
     uint32_t sequence_number;
     struct Int32Rates gyro;             ///< gyroscope measurements in rad/s in BFP with #INT32_RATE_FRAC
     struct Int32Vect3 accel;            ///< accelerometer measurements in m/s^2 in BFP with #INT32_ACCEL_FRAC

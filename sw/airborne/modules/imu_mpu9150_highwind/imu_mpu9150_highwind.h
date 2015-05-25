@@ -1,8 +1,7 @@
 /*
- * Copyright (C) 2006  Pascal Brisset, Antoine Drouin
- * Copyright (C) 2010  ENAC
+ * Copyright (C) Fabian Girrbach
  *
- * This file is part of paparazzi.
+ * This file is part of paparazzi
  *
  * paparazzi is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,18 +14,24 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with paparazzi; see the file COPYING.  If not, write to
- * the Free Software Foundation, 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
- *
+ * along with paparazzi; see the file COPYING.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
+/**
+ * @file "modules/imu_mpu9150_highwind/imu_mpu9150_highwind.h"
+ * @author Fabian Girrbach
+ * IMU MPU9150
  */
 
-#include "modules/datalink/extra_pprz_dl.h"
+#ifndef IMU_MPU9150_HIGHWIND_H
+#define IMU_MPU9150_HIGHWIND_H
 
-struct pprz_transport extra_pprz_tp;
+#include "peripherals/mpu9250_i2c.h"
 
-void extra_pprz_dl_init(void)
-{
-  pprz_transport_init(&extra_pprz_tp);
-}
+extern struct Mpu9250_I2c mpu9150;
 
+extern void imu_mpu9150_highwind_init(void);
+extern void imu_mpu9150_highwind_periodic(void);
+extern void imu_mpu9150_highwind_event(void);
+
+#endif
