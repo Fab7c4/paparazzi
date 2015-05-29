@@ -186,13 +186,13 @@
 
   <!-- ID 23 is free -->
   <message name="SERVO_COMMANDS" id="24" link="forwarded">
-     <field name="servo_1" type="int16"/>
-     <field name="servo_2" type="int16"/>
-     <field name="servo_3" type="int16"/>
-     <field name="servo_4" type="int16"/>
-     <field name="servo_5" type="int16"/>
-     <field name="servo_6" type="int16"/>
-     <field name="servo_7" type="int16"/>
+     <field name="throttle" type="int16"/>
+     <field name="elevator" type="int16"/>
+     <field name="rudder" type="int16"/>
+     <field name="aileron_right" type="int16"/>
+     <field name="aileron_left" type="int16"/>
+     <field name="flaps_right" type="int16"/>
+     <field name="flaps_left" type="int16"/>
    </message>
 
   <message name="SVINFO" id="25">

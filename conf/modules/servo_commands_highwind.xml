@@ -1,0 +1,17 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="servo_commands_highwind">
+  <doc>
+    <description>Module for setting servos from data</description>
+  </doc>
+  <header>
+    <file name="servo_commands_highwind.h"/>
+  </header>
+  <init fun="servo_commands_highwind_init()"/>
+  <periodic fun="servo_commands_highwind_periodic()" freq="50" autorun="TRUE"/>
+  <datalink message="SERVO_COMMANDS" fun="servo_commands_highwind_callback()"/>
+  <makefile>
+    <file name="servo_commands_highwind.c"/>
+  </makefile>
+</module>
+

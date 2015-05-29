@@ -40,6 +40,7 @@
     <load name="high_precision_timer_highwind.xml"/>
     <load name="lineangle_uart_input_highwind.xml"/>
     <load name="imu_mpu9150_highwind.xml"/>
+    <load name="servo_commands_highwind.xml"/>
     <!-- <load name="airspeed_ets.xml">
 	       Applies if another I2C interface than IC20 is used 
 	      <define name="AIRSPEED_ETS_SCALE"   value="1.44"/> 
@@ -55,6 +56,8 @@
     <servo name="RUDDER"        no="3" min="950"  neutral="1440" max="2050"/>
     <servo name="AILERON_RIGHT" no="4" min="1000" neutral="1500" max="2000"/>
     <servo name="AILERON_LEFT"  no="5" min="1000" neutral="1500" max="2000"/>
+    <servo name="FLAP_RIGHT"    no="6" min="1000" neutral="1500" max="2000"/>
+    <servo name="FLAP_LEFT"     no="7" min="1000" neutral="1500" max="2000"/>
   </servos>
 
   <commands>
