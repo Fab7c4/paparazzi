@@ -34,6 +34,8 @@ volatile bool_t rc_dl_frame_available;
 void radio_control_impl_init(void)
 {
   rc_dl_frame_available = FALSE;
+  radio_control.radio_ok_cpt = 0;
+  radio_control.status = RC_OK;
 }
 
 
