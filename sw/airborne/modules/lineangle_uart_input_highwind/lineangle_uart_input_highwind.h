@@ -28,10 +28,9 @@
 #include "modules/sensor_data_spi/sensor_data_spi.h"
 
 
-extern void lineangle_uart_input_highwind_init();
-extern void lineangle_uart_input_highwind_periodic();
+extern void lineangle_uart_input_highwind_init(void);
+extern void lineangle_uart_input_highwind_periodic(void);
 
 void readLineanglePackage(sensor_data_lineangle_t* out);
 
 #endif
-

@@ -30,7 +30,7 @@
 #define LA_NUM_STARTBYTES 3
 
 
-void lineangle_uart_input_highwind_init() {
+void lineangle_uart_input_highwind_init(void) {
 	uart_periph_init(&LA_UART);
 	uart_periph_set_mode(&LA_UART, false, true, false);
 	uart_periph_set_bits_stop_parity(&LA_UART, UBITS_8, USTOP_1, UPARITY_NO);
@@ -40,7 +40,7 @@ uint8_t numStartbytesRead = 0;
 sensor_data_lineangle_t latestLineangleReading1;
 sensor_data_lineangle_t latestLineangleReading2;
 
-void lineangle_uart_input_highwind_periodic() {
+void lineangle_uart_input_highwind_periodic(void) {
 
 
 	while(uart_char_available(&LA_UART) > 0 && numStartbytesRead != LA_NUM_STARTBYTES) {
@@ -66,5 +66,3 @@ void readLineanglePackage(sensor_data_lineangle_t* out) {
 		numStartbytesRead = 0;
 	}
 }
-
-
